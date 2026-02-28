@@ -1,0 +1,76 @@
+@page "{jobId:guid}"
+@model MetalMetrics.Web.Pages.Jobs.Notes.IndexModel
+@{
+    ViewData["Title"] = $"Notes — {Model.Job.JobNumber}";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Notes &mdash; @Model.Job.JobNumber</h2>
+    <a asp-page="/Jobs/Details" asp-route-id="@Model.Job.Id" class="btn btn-outline-secondary">Back to Job</a>
+</div>
+
+<div class="card shadow-sm mb-3">
+    <div class="card-header bg-dark text-white">
+        <h5 class="mb-0">Job Notes</h5>
+    </div>
+    <div class="card-body">
+        @if (Model.NotesList.Count == 0)
+        {
+            <p class="text-muted">No notes yet.</p>
+        }
+        else
+        {
+            @foreach (var note in Model.NotesList)
+            {
+                <div class="border-bottom pb-3 mb-3">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <strong>@note.AuthorName</strong>
+                            <span class="text-muted small ms-2">@note.CreatedAt.ToString("MMM dd, yyyy h:mm tt")</span>
+                        </div>
+                        @if (note.UserId == Model.CurrentUserId || User.IsInRole("Admin") || User.IsInRole("Owner"))
+                        {
+                            <form method="post" asp-page-handler="Delete" asp-route-jobId="@Model.Job.Id" asp-route-noteId="@note.Id">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                            </form>
+                        }
+                    </div>
+                    <p class="mt-2 mb-1">@note.Content</p>
+                    @if (!string.IsNullOrEmpty(note.ImageFileName))
+                    {
+                        <a href="/uploads/notes/@note.ImageFileName" target="_blank">
+                            <img src="/uploads/notes/@note.ImageFileName" alt="Note image" class="img-thumbnail mt-1" style="max-width: 300px; max-height: 200px;" />
+                        </a>
+                    }
+                </div>
+            }
+        }
+    </div>
+</div>
+
+<div class="card shadow-sm mb-3">
+    <div class="card-header bg-dark text-white">
+        <h5 class="mb-0">Add Note</h5>
+    </div>
+    <div class="card-body">
+        <form method="post" asp-route-jobId="@Model.Job.Id" enctype="multipart/form-data">
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+            <div class="mb-3">
+                <label asp-for="Input.Content" class="form-label"></label>
+                <textarea asp-for="Input.Content" class="form-control" rows="3" placeholder="Add a note..."></textarea>
+                <span asp-validation-for="Input.Content" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.Image" class="form-label"></label>
+                <input asp-for="Input.Image" class="form-control" accept=".jpg,.jpeg,.png,.gif" />
+                <div class="form-text">JPG, PNG, or GIF. Max 5MB.</div>
+                <span asp-validation-for="Input.Image" class="text-danger"></span>
+            </div>
+            <button type="submit" class="btn btn-warning">Add Note</button>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

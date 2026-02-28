@@ -1,0 +1,282 @@
+@page
+@model MetalMetrics.Web.Pages.Dashboard.IndexModel
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<h2 class="mb-4">Dashboard</h2>
+
+<!-- KPI Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card shadow-sm border-start border-4 border-primary">
+            <div class="card-body">
+                <div class="text-muted small">Total Jobs</div>
+                <h3 class="mb-0">@Model.Kpis.TotalJobs</h3>
+                <small class="text-muted">@Model.Kpis.JobsThisMonth this month</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border-start border-4 @(Model.Kpis.AverageMarginPercent >= Model.Kpis.TargetMarginPercent ? "border-success" : "border-warning")">
+            <div class="card-body">
+                <div class="text-muted small">Avg Margin</div>
+                <h3 class="mb-0 @(Model.Kpis.AverageMarginPercent >= 0 ? "text-profit" : "text-loss")">@Model.Kpis.AverageMarginPercent.ToString("F1")%</h3>
+                <small class="text-muted">Target: @Model.Kpis.TargetMarginPercent.ToString("F0")%</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border-start border-4 @(Model.Kpis.JobsOverBudget > 0 ? "border-danger" : "border-success")">
+            <div class="card-body">
+                <div class="text-muted small">Below Target Margin</div>
+                <h3 class="mb-0">@Model.Kpis.JobsOverBudget</h3>
+                <small class="text-muted">jobs below @Model.Kpis.TargetMarginPercent.ToString("F0")%</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border-start border-4 border-info">
+            <div class="card-body">
+                <div class="text-muted small">Revenue (Month)</div>
+                <h3 class="mb-0">@Model.Kpis.RevenueThisMonth.ToString("C0")</h3>
+                <small class="text-muted">completed this month</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (Model.JobSummaries.Count == 0)
+{
+    <div class="text-center text-muted py-5">
+        <p class="lead">No completed jobs with actuals yet.</p>
+        <p>Complete jobs and enter actuals to see profitability data here.</p>
+    </div>
+}
+else
+{
+    <!-- Estimated vs Actual Cost — full width -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">Estimated vs Actual Cost by Job</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="profitChart" height="150"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Margin Trend — full width -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">Margin Trend Over Time</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="marginTrend" height="150"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estimating Accuracy + Customer Profitability — 50% each -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">Estimating Accuracy</h5>
+                </div>
+                <div class="card-body">
+                    @{
+                        var worstCategory = Model.CategoryVariances.Count > 0
+                            ? Model.CategoryVariances.OrderByDescending(c => Math.Abs(c.AverageVariancePercent)).First()
+                            : null;
+                    }
+                    @if (Model.CategoryVariances.Count > 0)
+                    {
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Category</th>
+                                    <th class="text-end">Avg Variance</th>
+                                    <th>Direction</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var cv in Model.CategoryVariances)
+                                {
+                                    var varClass = cv.AverageVariancePercent > 5 ? "text-loss" : (cv.AverageVariancePercent < -5 ? "text-profit" : "");
+                                    <tr>
+                                        <td>@cv.Category</td>
+                                        <td class="text-end @varClass">@((cv.AverageVariancePercent >= 0 ? "+" : "") + cv.AverageVariancePercent.ToString("F1"))%</td>
+                                        <td><small class="text-muted">@cv.Direction</small></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                        if (worstCategory != null && Math.Abs(worstCategory.AverageVariancePercent) > 10)
+                        {
+                            <div class="alert alert-info py-2 mt-2 mb-0 small">
+                                You tend to @worstCategory.Direction.ToLower() <strong>@worstCategory.Category</strong> by ~@Math.Abs(worstCategory.AverageVariancePercent).ToString("F0")%.
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-muted mb-0">Not enough data yet.</p>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">Customer Profitability</h5>
+                </div>
+                <div class="card-body p-0">
+                    @if (Model.CustomerProfitability.Count > 0)
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Customer</th>
+                                        <th class="text-center">Jobs</th>
+                                        <th class="text-end">Revenue</th>
+                                        <th class="text-end">P/L</th>
+                                        <th class="text-end">Margin</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var c in Model.CustomerProfitability)
+                                    {
+                                        <tr>
+                                            <td>@c.CustomerName</td>
+                                            <td class="text-center">@c.JobCount</td>
+                                            <td class="text-end">@c.TotalRevenue.ToString("C0")</td>
+                                            <td class="text-end @(c.ProfitLoss >= 0 ? "text-profit" : "text-loss")">
+                                                @((c.ProfitLoss >= 0 ? "+" : "") + c.ProfitLoss.ToString("C0"))
+                                            </td>
+                                            <td class="text-end @(c.MarginPercent >= 0 ? "text-profit" : "text-loss")">
+                                                @c.MarginPercent.ToString("F1")%
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted p-3 mb-0">No customer data yet.</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    @if (Model.JobSummaries.Count > 0)
+    {
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+        <script>
+            var jobs = @Html.Raw(Model.JobSummariesJson);
+            var targetMargin = @Model.Kpis.TargetMarginPercent;
+
+            // 7.2 — Profitability Summary Chart
+            var profitCtx = document.getElementById('profitChart').getContext('2d');
+            new Chart(profitCtx, {
+                type: 'bar',
+                data: {
+                    labels: jobs.map(function(j) { return j.JobNumber; }),
+                    datasets: [
+                        {
+                            label: 'Estimated',
+                            data: jobs.map(function(j) { return j.TotalEstimatedCost; }),
+                            backgroundColor: 'rgba(54, 162, 235, 0.7)'
+                        },
+                        {
+                            label: 'Actual',
+                            data: jobs.map(function(j) { return j.TotalActualCost; }),
+                            backgroundColor: jobs.map(function(j) {
+                                return j.IsProfitable ? 'rgba(40, 167, 69, 0.7)' : 'rgba(220, 53, 69, 0.7)';
+                            })
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                afterLabel: function(ctx) {
+                                    var job = jobs[ctx.dataIndex];
+                                    return job.CustomerName + ' | Margin: ' + job.ActualMarginPercent.toFixed(1) + '%';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { callback: function(v) { return '$' + v.toFixed(0); } }
+                        }
+                    }
+                }
+            });
+
+            // 7.3 — Margin Drift Trend
+            var sortedJobs = jobs.slice().sort(function(a, b) {
+                return new Date(a.CompletedAt) - new Date(b.CompletedAt);
+            });
+            var marginCtx = document.getElementById('marginTrend').getContext('2d');
+            new Chart(marginCtx, {
+                type: 'line',
+                data: {
+                    labels: sortedJobs.map(function(j) {
+                        return new Date(j.CompletedAt).toLocaleDateString();
+                    }),
+                    datasets: [{
+                        label: 'Actual Margin %',
+                        data: sortedJobs.map(function(j) { return j.ActualMarginPercent; }),
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                        fill: false,
+                        tension: 0.3,
+                        pointBackgroundColor: sortedJobs.map(function(j) {
+                            return j.ActualMarginPercent >= targetMargin ? 'rgba(40, 167, 69, 1)' : 'rgba(220, 53, 69, 1)';
+                        }),
+                        pointRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                title: function(ctx) {
+                                    var job = sortedJobs[ctx[0].dataIndex];
+                                    return job.JobNumber + ' — ' + job.CustomerName;
+                                },
+                                label: function(ctx) {
+                                    return 'Margin: ' + ctx.raw.toFixed(1) + '%';
+                                }
+                            }
+                        },
+                        annotation: undefined
+                    },
+                    scales: {
+                        y: {
+                            ticks: { callback: function(v) { return v + '%'; } }
+                        }
+                    }
+                }
+            });
+        </script>
+    }
+}

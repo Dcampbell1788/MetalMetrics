@@ -1,0 +1,94 @@
+@page "{jobId:guid}"
+@model MetalMetrics.Web.Pages.Jobs.TimeEntries.IndexModel
+@{
+    ViewData["Title"] = $"Time Entries — {Model.Job.JobNumber}";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Time Entries &mdash; @Model.Job.JobNumber</h2>
+    <a asp-page="/Jobs/Details" asp-route-id="@Model.Job.Id" class="btn btn-outline-secondary">Back to Job</a>
+</div>
+
+<div class="card shadow-sm mb-3">
+    <div class="card-header bg-dark text-white">
+        <h5 class="mb-0">Logged Hours</h5>
+    </div>
+    <div class="card-body">
+        @if (Model.Entries.Count == 0)
+        {
+            <p class="text-muted">No time entries yet.</p>
+        }
+        else
+        {
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Date</th>
+                        <th>Worker</th>
+                        <th>Hours</th>
+                        <th>Notes</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var entry in Model.Entries)
+                    {
+                        <tr>
+                            <td>@entry.WorkDate.ToString("MMM dd, yyyy")</td>
+                            <td>@(Model.UserNames.GetValueOrDefault(entry.UserId, "Unknown"))</td>
+                            <td>@entry.HoursWorked.ToString("F1")</td>
+                            <td>@(entry.Notes ?? "—")</td>
+                            <td>
+                                @if (entry.UserId == Model.CurrentUserId)
+                                {
+                                    <form method="post" asp-page-handler="Delete" asp-route-jobId="@Model.Job.Id" asp-route-entryId="@entry.Id">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <div class="mt-2 text-end">
+                <strong>Total: @Model.Entries.Sum(e => e.HoursWorked).ToString("F1") hrs</strong>
+            </div>
+        }
+    </div>
+</div>
+
+@if (Model.CanLogTime)
+{
+    <div class="card shadow-sm mb-3">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0">Log Time</h5>
+        </div>
+        <div class="card-body">
+            <form method="post" asp-route-jobId="@Model.Job.Id">
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label asp-for="Input.WorkDate" class="form-label"></label>
+                        <input asp-for="Input.WorkDate" class="form-control" type="date" />
+                        <span asp-validation-for="Input.WorkDate" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-3">
+                        <label asp-for="Input.HoursWorked" class="form-label"></label>
+                        <input asp-for="Input.HoursWorked" class="form-control" step="0.25" />
+                        <span asp-validation-for="Input.HoursWorked" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Input.Notes" class="form-label"></label>
+                        <input asp-for="Input.Notes" class="form-control" placeholder="Optional notes" />
+                        <span asp-validation-for="Input.Notes" class="text-danger"></span>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-warning mt-3">Log Time</button>
+            </form>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,105 @@
+@page "{jobId:guid}"
+@model MetalMetrics.Web.Pages.Jobs.Quote.ViewModel
+@{
+    ViewData["Title"] = $"Quote — {Model.Estimate.Job?.JobNumber}";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Quote for @Model.Estimate.Job?.JobNumber</h2>
+    <a asp-page="/Jobs/Details" asp-route-id="@Model.Estimate.JobId" class="btn btn-outline-secondary">Back to Job</a>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card shadow-sm mb-3">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">Cost Breakdown</h5>
+            </div>
+            <div class="card-body">
+                <table class="table mb-0">
+                    <tbody>
+                        <tr>
+                            <td>Labor</td>
+                            <td class="text-end">@Model.Estimate.EstimatedLaborHours hrs x @Model.Estimate.LaborRate.ToString("C")/hr</td>
+                            <td class="text-end fw-bold">@((Model.Estimate.EstimatedLaborHours * Model.Estimate.LaborRate).ToString("C"))</td>
+                        </tr>
+                        <tr>
+                            <td>Material</td>
+                            <td class="text-end"></td>
+                            <td class="text-end fw-bold">@Model.Estimate.EstimatedMaterialCost.ToString("C")</td>
+                        </tr>
+                        <tr>
+                            <td>Machine</td>
+                            <td class="text-end">@Model.Estimate.EstimatedMachineHours hrs x @Model.Estimate.MachineRate.ToString("C")/hr</td>
+                            <td class="text-end fw-bold">@((Model.Estimate.EstimatedMachineHours * Model.Estimate.MachineRate).ToString("C"))</td>
+                        </tr>
+                        <tr>
+                            <td>Overhead</td>
+                            <td class="text-end">@Model.Estimate.OverheadPercent%</td>
+                            <td class="text-end fw-bold">
+                                @{
+                                    var subtotal = (Model.Estimate.EstimatedLaborHours * Model.Estimate.LaborRate)
+                                        + Model.Estimate.EstimatedMaterialCost
+                                        + (Model.Estimate.EstimatedMachineHours * Model.Estimate.MachineRate);
+                                    var overhead = subtotal * (Model.Estimate.OverheadPercent / 100m);
+                                }
+                                @overhead.ToString("C")
+                            </td>
+                        </tr>
+                        <tr class="table-dark">
+                            <td colspan="2"><strong>Total Estimated Cost</strong></td>
+                            <td class="text-end"><strong>@Model.Estimate.TotalEstimatedCost.ToString("C")</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card shadow-sm mb-3">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">Pricing</h5>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-6">Quote Price</dt>
+                    <dd class="col-sm-6 text-end fs-4 fw-bold">@Model.Estimate.QuotePrice.ToString("C")</dd>
+
+                    <dt class="col-sm-6">Estimated Margin</dt>
+                    <dd class="col-sm-6 text-end fs-4 fw-bold">
+                        <span class="@(Model.Estimate.EstimatedMarginPercent >= 0 ? "text-profit" : "text-loss")">
+                            @Model.Estimate.EstimatedMarginPercent.ToString("F1")%
+                        </span>
+                    </dd>
+
+                    <dt class="col-sm-6">Profit / Loss</dt>
+                    <dd class="col-sm-6 text-end fs-5">
+                        @{
+                            var profit = Model.Estimate.QuotePrice - Model.Estimate.TotalEstimatedCost;
+                        }
+                        <span class="@(profit >= 0 ? "text-profit" : "text-loss")">
+                            @profit.ToString("C")
+                        </span>
+                    </dd>
+                </dl>
+            </div>
+        </div>
+
+        @if (Model.Estimate.AIGenerated)
+        {
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">AI-Generated Quote</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">This estimate was generated with AI assistance.</p>
+                </div>
+            </div>
+        }
+
+        <p class="text-muted mt-3">
+            Created by @(Model.Estimate.CreatedBy ?? "Unknown") on @Model.Estimate.CreatedAt.ToString("MMM dd, yyyy h:mm tt")
+        </p>
+    </div>
+</div>

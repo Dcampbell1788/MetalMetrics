@@ -1,0 +1,93 @@
+@page
+@model MetalMetrics.Web.Pages.Jobs.IndexModel
+@{
+    ViewData["Title"] = "Jobs";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Jobs</h2>
+    @if (User.IsInRole("Admin") || User.IsInRole("Owner") || User.IsInRole("ProjectManager") || User.IsInRole("Foreman"))
+    {
+        <a asp-page="Create" class="btn btn-warning">New Job</a>
+    }
+</div>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-md-4">
+        <input asp-for="Search" class="form-control" placeholder="Search by customer or job #" />
+    </div>
+    <div class="col-md-3">
+        <select asp-for="StatusFilter" asp-items="Model.StatusOptions" class="form-select">
+            <option value="">All Statuses</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <button type="submit" class="btn btn-outline-secondary">Filter</button>
+    </div>
+</form>
+
+@if (Model.Jobs.Count == 0)
+{
+    <div class="text-center text-muted py-5">
+        <p class="lead">No jobs found.</p>
+    </div>
+}
+else
+{
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Job #</th>
+                        <th>Customer</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var job in Model.Jobs)
+                    {
+                        <tr>
+                            <td><strong>@job.JobNumber</strong></td>
+                            <td>@job.CustomerName</td>
+                            <td>
+                                @{
+                                    var badgeClass = job.Status switch
+                                    {
+                                        MetalMetrics.Core.Enums.JobStatus.Quoted => "bg-info",
+                                        MetalMetrics.Core.Enums.JobStatus.InProgress => "bg-primary",
+                                        MetalMetrics.Core.Enums.JobStatus.Completed => "bg-success",
+                                        MetalMetrics.Core.Enums.JobStatus.Invoiced => "bg-secondary",
+                                        _ => "bg-secondary"
+                                    };
+                                }
+                                <span class="badge @badgeClass">@job.Status</span>
+                                @if (job.Actuals != null && job.Estimate != null
+                                    && !User.IsInRole("Foreman") && !User.IsInRole("Journeyman"))
+                                {
+                                    var actualMargin = job.Actuals.ActualRevenue > 0
+                                        ? (job.Actuals.ActualRevenue - job.Actuals.TotalActualCost) / job.Actuals.ActualRevenue * 100
+                                        : 0;
+                                    if (actualMargin < Model.TargetMarginPercent)
+                                    {
+                                        <span class="badge bg-danger ms-1" title="Margin @actualMargin.ToString("F1")% below target @Model.TargetMarginPercent.ToString("F0")%">Low Margin</span>
+                                    }
+                                }
+                            </td>
+                            <td>@job.CreatedAt.ToString("MMM dd, yyyy")</td>
+                            <td>
+                                <a asp-page="Details" asp-route-id="@job.Id" class="btn btn-sm btn-outline-primary">View</a>
+                                @if (User.IsInRole("Admin") || User.IsInRole("Owner") || User.IsInRole("ProjectManager") || User.IsInRole("Foreman"))
+                                {
+                                    <a asp-page="Edit" asp-route-id="@job.Id" class="btn btn-sm btn-outline-secondary">Edit</a>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

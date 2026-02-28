@@ -1,0 +1,56 @@
+@page "{jobId:guid}"
+@model MetalMetrics.Web.Pages.Jobs.Actuals.QuickModel
+@{
+    ViewData["Title"] = $"Quick Entry — {Model.Job.JobNumber}";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-white text-center">
+                <h5 class="mb-0">Quick Entry</h5>
+                <small>@Model.Job.JobNumber — @Model.Job.CustomerName</small>
+            </div>
+            <div class="card-body">
+                <form method="post" asp-route-jobId="@Model.Job.Id">
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <div class="mb-4">
+                        <label asp-for="Input.ActualLaborHours" class="form-label fs-5"></label>
+                        <input asp-for="Input.ActualLaborHours" class="form-control form-control-lg" type="number" step="0.25" min="0" inputmode="decimal" style="font-size:1.25rem;" />
+                        <span asp-validation-for="Input.ActualLaborHours" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="Input.ActualMaterialCost" class="form-label fs-5"></label>
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text">$</span>
+                            <input asp-for="Input.ActualMaterialCost" class="form-control form-control-lg" type="number" step="0.01" min="0" inputmode="decimal" style="font-size:1.25rem;" />
+                        </div>
+                        <span asp-validation-for="Input.ActualMaterialCost" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="Input.ActualMachineHours" class="form-label fs-5"></label>
+                        <input asp-for="Input.ActualMachineHours" class="form-control form-control-lg" type="number" step="0.25" min="0" inputmode="decimal" style="font-size:1.25rem;" />
+                        <span asp-validation-for="Input.ActualMachineHours" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="Input.Notes" class="form-label fs-5"></label>
+                        <textarea asp-for="Input.Notes" class="form-control" rows="3" style="font-size:1.1rem;"></textarea>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-warning btn-lg fw-bold py-3">SAVE ACTUALS</button>
+                        <a asp-page="/Jobs/Details" asp-route-id="@Model.Job.Id" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

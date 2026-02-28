@@ -1,0 +1,223 @@
+@page "{jobId:guid}"
+@model MetalMetrics.Web.Pages.Jobs.Actuals.EnterModel
+@{
+    ViewData["Title"] = $"Enter Actuals — {Model.Job.JobNumber}";
+}
+
+<h2>Enter Actuals — @Model.Job.JobNumber</h2>
+<p class="text-muted">Customer: @Model.Job.CustomerName</p>
+
+<form method="post" asp-route-jobId="@Model.Job.Id">
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+    <div class="table-responsive">
+        <table class="table table-bordered align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th style="width:25%">Category</th>
+                    <th style="width:25%" class="text-end">Estimated</th>
+                    <th style="width:25%">Actual</th>
+                    <th style="width:25%" class="text-end">Variance</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Labor Hours</strong></td>
+                    <td class="text-end">@(Model.Estimate?.EstimatedLaborHours.ToString("F2") ?? "—") hrs</td>
+                    <td>
+                        <div class="input-group input-group-sm">
+                            <input asp-for="Input.ActualLaborHours" class="form-control calc-field" step="0.01" data-est="@(Model.Estimate?.EstimatedLaborHours ?? 0)" />
+                            <span class="input-group-text">hrs</span>
+                        </div>
+                    </td>
+                    <td class="text-end" id="var-labor-hours">—</td>
+                </tr>
+                <tr>
+                    <td><strong>Labor Rate</strong></td>
+                    <td class="text-end">@(Model.Estimate != null ? Model.Estimate.LaborRate.ToString("C") : "—")/hr</td>
+                    <td>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text">$</span>
+                            <input asp-for="Input.LaborRate" class="form-control calc-field" step="0.01" data-est="@(Model.Estimate?.LaborRate ?? 0)" />
+                            <span class="input-group-text">/hr</span>
+                        </div>
+                    </td>
+                    <td class="text-end" id="var-labor-rate">—</td>
+                </tr>
+                <tr>
+                    <td><strong>Material Cost</strong></td>
+                    <td class="text-end">@(Model.Estimate?.EstimatedMaterialCost.ToString("C") ?? "—")</td>
+                    <td>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text">$</span>
+                            <input asp-for="Input.ActualMaterialCost" class="form-control calc-field" step="0.01" data-est="@(Model.Estimate?.EstimatedMaterialCost ?? 0)" />
+                        </div>
+                    </td>
+                    <td class="text-end" id="var-material">—</td>
+                </tr>
+                <tr>
+                    <td><strong>Machine Hours</strong></td>
+                    <td class="text-end">@(Model.Estimate?.EstimatedMachineHours.ToString("F2") ?? "—") hrs</td>
+                    <td>
+                        <div class="input-group input-group-sm">
+                            <input asp-for="Input.ActualMachineHours" class="form-control calc-field" step="0.01" data-est="@(Model.Estimate?.EstimatedMachineHours ?? 0)" />
+                            <span class="input-group-text">hrs</span>
+                        </div>
+                    </td>
+                    <td class="text-end" id="var-machine-hours">—</td>
+                </tr>
+                <tr>
+                    <td><strong>Machine Rate</strong></td>
+                    <td class="text-end">@(Model.Estimate != null ? Model.Estimate.MachineRate.ToString("C") : "—")/hr</td>
+                    <td>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text">$</span>
+                            <input asp-for="Input.MachineRate" class="form-control calc-field" step="0.01" data-est="@(Model.Estimate?.MachineRate ?? 0)" />
+                            <span class="input-group-text">/hr</span>
+                        </div>
+                    </td>
+                    <td class="text-end" id="var-machine-rate">—</td>
+                </tr>
+                <tr>
+                    <td><strong>Overhead</strong></td>
+                    <td class="text-end">@(Model.Estimate?.OverheadPercent.ToString("F1") ?? "—")%</td>
+                    <td>
+                        <div class="input-group input-group-sm">
+                            <input asp-for="Input.OverheadPercent" class="form-control calc-field" step="0.01" data-est="@(Model.Estimate?.OverheadPercent ?? 0)" />
+                            <span class="input-group-text">%</span>
+                        </div>
+                    </td>
+                    <td class="text-end" id="var-overhead">—</td>
+                </tr>
+                <tr class="table-secondary fw-bold">
+                    <td>Total Cost</td>
+                    <td class="text-end">@(Model.Estimate?.TotalEstimatedCost.ToString("C") ?? "—")</td>
+                    <td class="text-end" id="calc-total">$0.00</td>
+                    <td class="text-end" id="var-total">—</td>
+                </tr>
+                <tr>
+                    <td><strong>Revenue</strong></td>
+                    <td class="text-end">@(Model.Estimate?.QuotePrice.ToString("C") ?? "—") <span class="text-muted small">(quote)</span></td>
+                    <td>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text">$</span>
+                            <input asp-for="Input.ActualRevenue" class="form-control calc-field" step="0.01" />
+                        </div>
+                    </td>
+                    <td></td>
+                </tr>
+                <tr class="table-secondary fw-bold">
+                    <td>Margin</td>
+                    <td class="text-end">@(Model.Estimate != null ? Model.Estimate.EstimatedMarginPercent.ToString("F1") + "%" : "—")</td>
+                    <td class="text-end" id="calc-margin">0.0%</td>
+                    <td class="text-end" id="var-margin">—</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Input.Notes" class="form-label"></label>
+        <textarea asp-for="Input.Notes" class="form-control" rows="3" placeholder="Additional context about the actuals..."></textarea>
+    </div>
+
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-warning">Save Actuals</button>
+        <a asp-page="/Jobs/Details" asp-route-id="@Model.Job.Id" class="btn btn-outline-secondary">Cancel</a>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        var estTotal = @(Model.Estimate?.TotalEstimatedCost ?? 0);
+        var estMargin = @(Model.Estimate?.EstimatedMarginPercent ?? 0);
+
+        function formatVariance(actual, estimated, isCurrency) {
+            var diff = actual - estimated;
+            var prefix = diff > 0 ? '+' : '';
+            var text = isCurrency ? (prefix + '$' + Math.abs(diff).toFixed(2)) : (prefix + diff.toFixed(2));
+            if (diff > 0) text = '+$' + diff.toFixed(2);
+            else if (diff < 0) text = '-$' + Math.abs(diff).toFixed(2);
+            else text = '$0.00';
+            var cls = diff > 0 ? 'text-loss' : (diff < 0 ? 'text-profit' : '');
+            return { text: text, cls: cls };
+        }
+
+        function formatVarianceNum(actual, estimated, suffix) {
+            var diff = actual - estimated;
+            var prefix = diff > 0 ? '+' : '';
+            var text = prefix + diff.toFixed(2) + (suffix || '');
+            var cls = diff > 0 ? 'text-loss' : (diff < 0 ? 'text-profit' : '');
+            return { text: text, cls: cls };
+        }
+
+        function recalculate() {
+            var laborHours = parseFloat(document.querySelector('[name="Input.ActualLaborHours"]').value) || 0;
+            var laborRate = parseFloat(document.querySelector('[name="Input.LaborRate"]').value) || 0;
+            var materialCost = parseFloat(document.querySelector('[name="Input.ActualMaterialCost"]').value) || 0;
+            var machineHours = parseFloat(document.querySelector('[name="Input.ActualMachineHours"]').value) || 0;
+            var machineRate = parseFloat(document.querySelector('[name="Input.MachineRate"]').value) || 0;
+            var overheadPct = parseFloat(document.querySelector('[name="Input.OverheadPercent"]').value) || 0;
+            var revenue = parseFloat(document.querySelector('[name="Input.ActualRevenue"]').value) || 0;
+
+            var labor = laborHours * laborRate;
+            var machine = machineHours * machineRate;
+            var subtotal = labor + materialCost + machine;
+            var overhead = subtotal * (overheadPct / 100);
+            var total = subtotal + overhead;
+
+            document.getElementById('calc-total').textContent = '$' + total.toFixed(2);
+
+            var margin = revenue > 0 ? ((revenue - total) / revenue * 100) : 0;
+            var marginEl = document.getElementById('calc-margin');
+            marginEl.textContent = margin.toFixed(1) + '%';
+            marginEl.className = 'text-end fw-bold ' + (margin >= 0 ? 'text-profit' : 'text-loss');
+
+            // Variances for individual fields
+            var fields = [
+                { id: 'var-labor-hours', actual: laborHours, suffix: ' hrs' },
+                { id: 'var-labor-rate', actual: laborRate, isCurrency: true },
+                { id: 'var-material', actual: materialCost, isCurrency: true },
+                { id: 'var-machine-hours', actual: machineHours, suffix: ' hrs' },
+                { id: 'var-machine-rate', actual: machineRate, isCurrency: true },
+                { id: 'var-overhead', actual: overheadPct, suffix: '%' }
+            ];
+
+            fields.forEach(function (f) {
+                var el = document.getElementById(f.id);
+                var input = el.closest('tr').querySelector('.calc-field');
+                var est = parseFloat(input.getAttribute('data-est')) || 0;
+                var diff = f.actual - est;
+                var prefix = diff > 0 ? '+' : '';
+
+                if (f.isCurrency) {
+                    el.textContent = (diff >= 0 ? '+$' : '-$') + Math.abs(diff).toFixed(2);
+                } else {
+                    el.textContent = prefix + diff.toFixed(2) + (f.suffix || '');
+                }
+
+                el.className = 'text-end ' + (diff > 0.001 ? 'text-loss' : (diff < -0.001 ? 'text-profit' : ''));
+            });
+
+            // Total variance
+            var totalVar = document.getElementById('var-total');
+            var totalDiff = total - estTotal;
+            totalVar.textContent = (totalDiff >= 0 ? '+$' : '-$') + Math.abs(totalDiff).toFixed(2);
+            totalVar.className = 'text-end fw-bold ' + (totalDiff > 0.01 ? 'text-loss' : (totalDiff < -0.01 ? 'text-profit' : ''));
+
+            // Margin variance
+            var marginVar = document.getElementById('var-margin');
+            var marginDiff = margin - estMargin;
+            var marginPrefix = marginDiff > 0 ? '+' : '';
+            marginVar.textContent = marginPrefix + marginDiff.toFixed(1) + '%';
+            marginVar.className = 'text-end fw-bold ' + (marginDiff < -0.1 ? 'text-loss' : (marginDiff > 0.1 ? 'text-profit' : ''));
+        }
+
+        document.querySelectorAll('.calc-field').forEach(function (el) {
+            el.addEventListener('input', recalculate);
+        });
+
+        recalculate();
+    </script>
+}

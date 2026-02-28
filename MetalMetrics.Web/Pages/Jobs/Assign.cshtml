@@ -1,0 +1,84 @@
+@page "{id:guid}"
+@model MetalMetrics.Web.Pages.Jobs.AssignModel
+@{
+    ViewData["Title"] = $"Assign Team — {Model.Job.JobNumber}";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Assign Team &mdash; @Model.Job.JobNumber</h2>
+    <a asp-page="Details" asp-route-id="@Model.Job.Id" class="btn btn-outline-secondary">Back to Job</a>
+</div>
+
+<div class="row">
+    <div class="col-md-7">
+        <div class="card shadow-sm mb-3">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">Current Assignments</h5>
+            </div>
+            <div class="card-body">
+                @if (Model.Assignments.Count == 0)
+                {
+                    <p class="text-muted">No team members assigned yet.</p>
+                }
+                else
+                {
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Name</th>
+                                <th>Role</th>
+                                <th>Assigned</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var a in Model.Assignments)
+                            {
+                                <tr>
+                                    <td>@a.User?.FullName</td>
+                                    <td><span class="badge bg-secondary">@a.User?.Role</span></td>
+                                    <td>@a.CreatedAt.ToString("MMM dd, yyyy")</td>
+                                    <td>
+                                        <form method="post" asp-page-handler="Remove" asp-route-id="@Model.Job.Id" asp-route-userId="@a.UserId">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-5">
+        <div class="card shadow-sm mb-3">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">Add Team Member</h5>
+            </div>
+            <div class="card-body">
+                @if (Model.AvailableUsers.Count == 0)
+                {
+                    <p class="text-muted">No available users to assign.</p>
+                }
+                else
+                {
+                    <form method="post" asp-page-handler="Assign" asp-route-id="@Model.Job.Id">
+                        <div class="mb-3">
+                            <label class="form-label">Select Team Member</label>
+                            <select asp-for="SelectedUserId" class="form-select">
+                                <option value="">-- Select --</option>
+                                @foreach (var user in Model.AvailableUsers)
+                                {
+                                    <option value="@user.Id">@user.FullName (@user.Role)</option>
+                                }
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-warning">Assign</button>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+</div>

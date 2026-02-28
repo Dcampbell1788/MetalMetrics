@@ -1,0 +1,190 @@
+@page "{id:guid}"
+@model MetalMetrics.Web.Pages.Jobs.DetailsModel
+@{
+    ViewData["Title"] = $"Job {Model.Job.JobNumber}";
+    var isShopFloor = User.IsInRole("Foreman") || User.IsInRole("Journeyman");
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Job @Model.Job.JobNumber</h2>
+    <div>
+        @if (User.IsInRole("Admin") || User.IsInRole("Owner") || User.IsInRole("ProjectManager") || User.IsInRole("Foreman"))
+        {
+            <a asp-page="Edit" asp-route-id="@Model.Job.Id" class="btn btn-outline-secondary">Edit</a>
+        }
+        <a asp-page="Index" class="btn btn-outline-secondary">Back to Jobs</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card shadow-sm mb-3">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">Job Details</h5>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Job Number</dt>
+                    <dd class="col-sm-8"><strong>@Model.Job.JobNumber</strong></dd>
+
+                    <dt class="col-sm-4">Customer</dt>
+                    <dd class="col-sm-8">@Model.Job.CustomerName</dd>
+
+                    <dt class="col-sm-4">Status</dt>
+                    <dd class="col-sm-8">
+                        @{
+                            var badgeClass = Model.Job.Status switch
+                            {
+                                MetalMetrics.Core.Enums.JobStatus.Quoted => "bg-info",
+                                MetalMetrics.Core.Enums.JobStatus.InProgress => "bg-primary",
+                                MetalMetrics.Core.Enums.JobStatus.Completed => "bg-success",
+                                MetalMetrics.Core.Enums.JobStatus.Invoiced => "bg-secondary",
+                                _ => "bg-secondary"
+                            };
+                        }
+                        <span class="badge @badgeClass">@Model.Job.Status</span>
+                    </dd>
+
+                    <dt class="col-sm-4">Description</dt>
+                    <dd class="col-sm-8">@(Model.Job.Description ?? "—")</dd>
+
+                    <dt class="col-sm-4">Created</dt>
+                    <dd class="col-sm-8">@Model.Job.CreatedAt.ToString("MMM dd, yyyy h:mm tt")</dd>
+
+                    @if (Model.Job.CompletedAt.HasValue)
+                    {
+                        <dt class="col-sm-4">Completed</dt>
+                        <dd class="col-sm-8">@Model.Job.CompletedAt.Value.ToString("MMM dd, yyyy h:mm tt")</dd>
+                    }
+                </dl>
+
+                @if (User.IsInRole("Admin") || User.IsInRole("Owner") || User.IsInRole("ProjectManager"))
+                {
+                    <hr />
+                    <div class="d-flex gap-2 flex-wrap">
+                        @if (Model.Job.Status == MetalMetrics.Core.Enums.JobStatus.Quoted)
+                        {
+                            <form method="post" asp-page-handler="Start" asp-route-id="@Model.Job.Id">
+                                <button type="submit" class="btn btn-primary btn-sm">Start Job</button>
+                            </form>
+                        }
+                        @if (Model.Job.Status == MetalMetrics.Core.Enums.JobStatus.InProgress)
+                        {
+                            <form method="post" asp-page-handler="Complete" asp-route-id="@Model.Job.Id">
+                                <button type="submit" class="btn btn-success btn-sm">Mark as Completed</button>
+                            </form>
+                        }
+                        @if (Model.Job.Status == MetalMetrics.Core.Enums.JobStatus.Completed)
+                        {
+                            <form method="post" asp-page-handler="Invoice" asp-route-id="@Model.Job.Id">
+                                <button type="submit" class="btn btn-secondary btn-sm">Mark as Invoiced</button>
+                            </form>
+                        }
+                    </div>
+                }
+
+                <hr />
+                <div class="d-flex gap-2 flex-wrap">
+                    @if (User.IsInRole("Admin") || User.IsInRole("Owner") || User.IsInRole("ProjectManager") || User.IsInRole("Foreman"))
+                    {
+                        <a asp-page="Assign" asp-route-id="@Model.Job.Id" class="btn btn-sm btn-outline-warning">Assign Team</a>
+                    }
+                    @if (User.IsInRole("Admin") || User.IsInRole("Owner") || User.IsInRole("ProjectManager") || Model.IsAssigned)
+                    {
+                        <a asp-page="/Jobs/TimeEntries/Index" asp-route-jobId="@Model.Job.Id" class="btn btn-sm btn-outline-primary">Time Entries</a>
+                        <a asp-page="/Jobs/Notes/Index" asp-route-jobId="@Model.Job.Id" class="btn btn-sm btn-outline-primary">Notes</a>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (!isShopFloor)
+    {
+        <div class="col-md-6">
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">Quote / Estimate</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.Job.Estimate != null)
+                    {
+                        <dl class="row mb-0">
+                            <dt class="col-sm-6">Total Estimated Cost</dt>
+                            <dd class="col-sm-6">@Model.Job.Estimate.TotalEstimatedCost.ToString("C")</dd>
+
+                            <dt class="col-sm-6">Quote Price</dt>
+                            <dd class="col-sm-6">@Model.Job.Estimate.QuotePrice.ToString("C")</dd>
+
+                            <dt class="col-sm-6">Estimated Margin</dt>
+                            <dd class="col-sm-6">
+                                <span class="@(Model.Job.Estimate.EstimatedMarginPercent >= 0 ? "text-profit" : "text-loss")">
+                                    @Model.Job.Estimate.EstimatedMarginPercent.ToString("F1")%
+                                </span>
+                            </dd>
+                        </dl>
+                        <a asp-page="/Jobs/Quote/View" asp-route-jobId="@Model.Job.Id" class="btn btn-sm btn-outline-primary mt-2">View Full Quote</a>
+                    }
+                    else
+                    {
+                        <p class="text-muted mb-2">No quote created yet.</p>
+                        @if (User.IsInRole("Admin") || User.IsInRole("Owner") || User.IsInRole("ProjectManager") || User.IsInRole("Estimator"))
+                        {
+                            <a asp-page="/Jobs/Quote/AI" asp-route-jobId="@Model.Job.Id" class="btn btn-warning btn-sm">AI Quote</a>
+                            <a asp-page="/Jobs/Quote/Create" asp-route-jobId="@Model.Job.Id" class="btn btn-outline-secondary btn-sm ms-1">Manual Quote</a>
+                        }
+                    }
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">Actuals</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.Job.Actuals != null)
+                    {
+                        <dl class="row mb-0">
+                            <dt class="col-sm-6">Total Actual Cost</dt>
+                            <dd class="col-sm-6">@Model.Job.Actuals.TotalActualCost.ToString("C")</dd>
+
+                            <dt class="col-sm-6">Actual Revenue</dt>
+                            <dd class="col-sm-6">@Model.Job.Actuals.ActualRevenue.ToString("C")</dd>
+
+                            <dt class="col-sm-6">Actual Margin</dt>
+                            <dd class="col-sm-6">
+                                @{
+                                    var actualMargin = Model.Job.Actuals.ActualRevenue > 0
+                                        ? (Model.Job.Actuals.ActualRevenue - Model.Job.Actuals.TotalActualCost) / Model.Job.Actuals.ActualRevenue * 100
+                                        : 0;
+                                }
+                                <span class="@(actualMargin >= 0 ? "text-profit" : "text-loss")">
+                                    @actualMargin.ToString("F1")%
+                                </span>
+                            </dd>
+                        </dl>
+                        <div class="mt-2">
+                            @if (User.IsInRole("Admin") || User.IsInRole("Owner") || User.IsInRole("ProjectManager") || User.IsInRole("Foreman"))
+                            {
+                                <a asp-page="/Jobs/Actuals/Enter" asp-route-jobId="@Model.Job.Id" class="btn btn-sm btn-outline-primary">Edit Actuals</a>
+                            }
+                            @if (Model.Job.Estimate != null && (User.IsInRole("Admin") || User.IsInRole("Owner") || User.IsInRole("ProjectManager")))
+                            {
+                                <a asp-page="/Jobs/Profitability/Index" asp-route-jobId="@Model.Job.Id" class="btn btn-sm btn-outline-success ms-1">View Profitability</a>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted mb-2">No actuals recorded yet.</p>
+                        @if (User.IsInRole("Admin") || User.IsInRole("Owner") || User.IsInRole("ProjectManager") || User.IsInRole("Foreman"))
+                        {
+                            <a asp-page="/Jobs/Actuals/Enter" asp-route-jobId="@Model.Job.Id" class="btn btn-warning btn-sm">Enter Actuals</a>
+                            <a asp-page="/Jobs/Actuals/Quick" asp-route-jobId="@Model.Job.Id" class="btn btn-outline-secondary btn-sm ms-1">Quick Entry</a>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>

@@ -1,0 +1,91 @@
+@page "{jobId:guid}"
+@model MetalMetrics.Web.Pages.Jobs.Quote.CreateModel
+@{
+    ViewData["Title"] = $"Create Quote — {Model.JobNumber}";
+}
+
+<h2>Create Quote for @Model.JobNumber</h2>
+<p class="text-muted">Customer: @Model.CustomerName</p>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <form method="post" asp-route-jobId="@Model.JobId">
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <h5 class="mb-3">Labor</h5>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="Input.EstimatedLaborHours" class="form-label"></label>
+                            <input asp-for="Input.EstimatedLaborHours" class="form-control" step="0.01" />
+                            <span asp-validation-for="Input.EstimatedLaborHours" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Input.LaborRate" class="form-label"></label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input asp-for="Input.LaborRate" class="form-control" step="0.01" />
+                            </div>
+                            <span asp-validation-for="Input.LaborRate" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <h5 class="mb-3">Material</h5>
+                    <div class="mb-3">
+                        <label asp-for="Input.EstimatedMaterialCost" class="form-label"></label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input asp-for="Input.EstimatedMaterialCost" class="form-control" step="0.01" />
+                        </div>
+                        <span asp-validation-for="Input.EstimatedMaterialCost" class="text-danger"></span>
+                    </div>
+
+                    <h5 class="mb-3">Machine</h5>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="Input.EstimatedMachineHours" class="form-label"></label>
+                            <input asp-for="Input.EstimatedMachineHours" class="form-control" step="0.01" />
+                            <span asp-validation-for="Input.EstimatedMachineHours" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Input.MachineRate" class="form-label"></label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input asp-for="Input.MachineRate" class="form-control" step="0.01" />
+                            </div>
+                            <span asp-validation-for="Input.MachineRate" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <h5 class="mb-3">Overhead & Pricing</h5>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="Input.OverheadPercent" class="form-label"></label>
+                            <div class="input-group">
+                                <input asp-for="Input.OverheadPercent" class="form-control" step="0.01" />
+                                <span class="input-group-text">%</span>
+                            </div>
+                            <span asp-validation-for="Input.OverheadPercent" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Input.QuotePrice" class="form-label"></label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input asp-for="Input.QuotePrice" class="form-control" step="0.01" />
+                            </div>
+                            <span asp-validation-for="Input.QuotePrice" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-warning">Create Quote</button>
+                    <a asp-page="/Jobs/Details" asp-route-id="@Model.JobId" class="btn btn-outline-secondary ms-2">Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

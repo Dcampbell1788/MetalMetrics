@@ -1,0 +1,27 @@
+@page "{statusCode?}"
+@model ErrorModel
+@{
+    ViewData["Title"] = Model.ErrorMessage;
+}
+
+<div class="text-center py-5">
+    @if (Model.StatusCode == 404)
+    {
+        <h1 class="display-4 text-muted">404</h1>
+        <h2>Page Not Found</h2>
+        <p class="text-muted">The page you're looking for doesn't exist or has been moved.</p>
+        <a asp-page="/Index" class="btn btn-warning mt-3">Go Home</a>
+        <a asp-page="/Jobs/Index" class="btn btn-outline-secondary mt-3 ms-2">View Jobs</a>
+    }
+    else
+    {
+        <h1 class="display-4 text-danger">Oops!</h1>
+        <h2>Something went wrong</h2>
+        <p class="text-muted">We encountered an unexpected error. Please try again.</p>
+        @if (Model.ShowRequestId)
+        {
+            <p class="small text-muted">Request ID: <code>@Model.RequestId</code></p>
+        }
+        <a asp-page="/Index" class="btn btn-warning mt-3">Go Home</a>
+    }
+</div>

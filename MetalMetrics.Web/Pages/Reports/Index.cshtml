@@ -1,0 +1,248 @@
+@page
+@model MetalMetrics.Web.Pages.Reports.IndexModel
+@{
+    ViewData["Title"] = "Reports";
+}
+
+<h2 class="mb-4">Reports</h2>
+
+<!-- Date Range Filter -->
+<form method="get" class="row g-3 mb-4 align-items-end">
+    <div class="col-auto">
+        <label class="form-label fw-semibold">From</label>
+        <input type="date" class="form-control" asp-for="From" />
+    </div>
+    <div class="col-auto">
+        <label class="form-label fw-semibold">To</label>
+        <input type="date" class="form-control" asp-for="To" />
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-warning fw-semibold">Apply</button>
+    </div>
+</form>
+
+<!-- KPI Cards -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card shadow-sm border-start border-4 border-primary">
+            <div class="card-body">
+                <div class="text-muted small">Jobs in Period</div>
+                <h3 class="mb-0">@Model.JobCount</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm border-start border-4 border-info">
+            <div class="card-body">
+                <div class="text-muted small">Total Revenue</div>
+                <h3 class="mb-0">@Model.TotalRevenue.ToString("C0")</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm border-start border-4 @(Model.AvgMargin >= 20 ? "border-success" : "border-warning")">
+            <div class="card-body">
+                <div class="text-muted small">Avg Margin</div>
+                <h3 class="mb-0 @(Model.AvgMargin >= 0 ? "text-profit" : "text-loss")">@Model.AvgMargin.ToString("F1")%</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (Model.Jobs.Count == 0)
+{
+    <div class="text-center text-muted py-5">
+        <p class="lead">No completed jobs in the selected date range.</p>
+        <p>Adjust the date range or complete more jobs to see report data.</p>
+    </div>
+}
+else
+{
+    <!-- Job History Table -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0">Job History</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0" id="jobHistoryTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="sortable" data-sort="string" role="button">Job #</th>
+                            <th class="sortable" data-sort="string" role="button">Customer</th>
+                            <th class="sortable text-end" data-sort="number" role="button">Quote Price</th>
+                            <th class="sortable text-end" data-sort="number" role="button">Actual Cost</th>
+                            <th class="sortable text-end" data-sort="number" role="button">Margin %</th>
+                            <th class="sortable" data-sort="string" role="button">Status</th>
+                            <th class="sortable" data-sort="date" role="button">Completed</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var job in Model.Jobs)
+                        {
+                            <tr>
+                                <td>
+                                    <a asp-page="/Jobs/Details" asp-route-id="@job.JobId">@job.JobNumber</a>
+                                </td>
+                                <td>@job.CustomerName</td>
+                                <td class="text-end">@job.QuotePrice.ToString("C0")</td>
+                                <td class="text-end">@job.TotalActualCost.ToString("C0")</td>
+                                <td class="text-end @(job.ActualMarginPercent >= 0 ? "text-profit" : "text-loss")">
+                                    @job.ActualMarginPercent.ToString("F1")%
+                                </td>
+                                <td>
+                                    <span class="badge @(job.Status == "Completed" ? "bg-success" : job.Status == "Invoiced" ? "bg-primary" : "bg-secondary")">
+                                        @job.Status
+                                    </span>
+                                </td>
+                                <td>@job.CompletedAt.ToString("MMM dd, yyyy")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer Profitability -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">Customer Profitability</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Customer</th>
+                                    <th class="text-center">Jobs</th>
+                                    <th class="text-end">Revenue</th>
+                                    <th class="text-end">P/L</th>
+                                    <th class="text-end">Margin</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var c in Model.CustomerProfitability)
+                                {
+                                    <tr>
+                                        <td>@c.CustomerName</td>
+                                        <td class="text-center">@c.JobCount</td>
+                                        <td class="text-end">@c.TotalRevenue.ToString("C0")</td>
+                                        <td class="text-end @(c.ProfitLoss >= 0 ? "text-profit" : "text-loss")">
+                                            @((c.ProfitLoss >= 0 ? "+" : "") + c.ProfitLoss.ToString("C0"))
+                                        </td>
+                                        <td class="text-end @(c.MarginPercent >= 0 ? "text-profit" : "text-loss")">
+                                            @c.MarginPercent.ToString("F1")%
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">Customer Profitability Chart</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="customerProfitChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    @if (Model.Jobs.Count > 0)
+    {
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+        <script>
+            // Client-side column sorting
+            (function () {
+                var table = document.getElementById('jobHistoryTable');
+                var headers = table.querySelectorAll('th.sortable');
+                var sortDir = {};
+
+                headers.forEach(function (th, colIdx) {
+                    th.style.cursor = 'pointer';
+                    th.addEventListener('click', function () {
+                        var type = th.getAttribute('data-sort');
+                        var asc = sortDir[colIdx] = !sortDir[colIdx];
+                        var tbody = table.querySelector('tbody');
+                        var rows = Array.from(tbody.querySelectorAll('tr'));
+
+                        rows.sort(function (a, b) {
+                            var aText = a.children[colIdx].textContent.trim();
+                            var bText = b.children[colIdx].textContent.trim();
+
+                            if (type === 'number') {
+                                var aVal = parseFloat(aText.replace(/[^0-9.\-]/g, '')) || 0;
+                                var bVal = parseFloat(bText.replace(/[^0-9.\-]/g, '')) || 0;
+                                return asc ? aVal - bVal : bVal - aVal;
+                            } else if (type === 'date') {
+                                var aDate = new Date(aText);
+                                var bDate = new Date(bText);
+                                return asc ? aDate - bDate : bDate - aDate;
+                            } else {
+                                return asc ? aText.localeCompare(bText) : bText.localeCompare(aText);
+                            }
+                        });
+
+                        rows.forEach(function (row) { tbody.appendChild(row); });
+
+                        // Update sort indicators
+                        headers.forEach(function (h) {
+                            h.textContent = h.textContent.replace(/ ▲| ▼/g, '');
+                        });
+                        th.textContent += asc ? ' ▲' : ' ▼';
+                    });
+                });
+            })();
+
+            // Customer Profitability horizontal bar chart
+            var custData = @Html.Raw(Model.CustomerProfitabilityJson);
+            var custCtx = document.getElementById('customerProfitChart').getContext('2d');
+            new Chart(custCtx, {
+                type: 'bar',
+                data: {
+                    labels: custData.map(function (c) { return c.CustomerName; }),
+                    datasets: [{
+                        label: 'Profit / Loss',
+                        data: custData.map(function (c) { return c.ProfitLoss; }),
+                        backgroundColor: custData.map(function (c) {
+                            return c.ProfitLoss >= 0 ? 'rgba(40, 167, 69, 0.7)' : 'rgba(220, 53, 69, 0.7)';
+                        }),
+                        borderColor: custData.map(function (c) {
+                            return c.ProfitLoss >= 0 ? 'rgba(40, 167, 69, 1)' : 'rgba(220, 53, 69, 1)';
+                        }),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function (ctx) {
+                                    var c = custData[ctx.dataIndex];
+                                    return 'P/L: $' + c.ProfitLoss.toFixed(0) + ' | Margin: ' + c.MarginPercent.toFixed(1) + '%';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { callback: function (v) { return '$' + v.toFixed(0); } }
+                        }
+                    }
+                }
+            });
+        </script>
+    }
+}

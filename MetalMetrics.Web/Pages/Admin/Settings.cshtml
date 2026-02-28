@@ -1,0 +1,67 @@
+@page
+@model MetalMetrics.Web.Pages.Admin.SettingsModel
+@{
+    ViewData["Title"] = "Company Settings";
+}
+
+<h2>Company Settings</h2>
+<p class="text-muted">Configure default rates used to pre-populate quote forms.</p>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">Default Rates</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="Input.DefaultLaborRate" class="form-label"></label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input asp-for="Input.DefaultLaborRate" class="form-control" step="0.01" />
+                            <span class="input-group-text">/hr</span>
+                        </div>
+                        <span asp-validation-for="Input.DefaultLaborRate" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Input.DefaultMachineRate" class="form-label"></label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input asp-for="Input.DefaultMachineRate" class="form-control" step="0.01" />
+                            <span class="input-group-text">/hr</span>
+                        </div>
+                        <span asp-validation-for="Input.DefaultMachineRate" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Input.DefaultOverheadPercent" class="form-label"></label>
+                        <div class="input-group">
+                            <input asp-for="Input.DefaultOverheadPercent" class="form-control" step="0.01" />
+                            <span class="input-group-text">%</span>
+                        </div>
+                        <span asp-validation-for="Input.DefaultOverheadPercent" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Input.TargetMarginPercent" class="form-label"></label>
+                        <div class="input-group">
+                            <input asp-for="Input.TargetMarginPercent" class="form-control" step="0.01" />
+                            <span class="input-group-text">%</span>
+                        </div>
+                        <span asp-validation-for="Input.TargetMarginPercent" class="text-danger"></span>
+                    </div>
+
+                    <button type="submit" class="btn btn-warning">Save Settings</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
