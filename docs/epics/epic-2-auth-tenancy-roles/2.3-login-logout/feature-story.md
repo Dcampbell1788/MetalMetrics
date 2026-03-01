@@ -31,11 +31,23 @@
 - `TenantId` claim — used by `TenantProvider` for all tenant-scoped queries
 - `FullName` claim — displayed in UI
 
-### Logout
+### Logout Page (`Web/Pages/Logout.cshtml.cs`)
 
-Handled via `_LoginPartial.cshtml` with a form POST to `/Login?handler=Logout`:
-- Calls `SignInManager.SignOutAsync()`
-- Redirects to `/Login`
+Dedicated page model handling POST requests:
+```csharp
+public async Task<IActionResult> OnPostAsync()
+{
+    await _signInManager.SignOutAsync();
+    return RedirectToPage("/Login");
+}
+```
+
+`_LoginPartial.cshtml` renders a form POST to `/Logout`:
+```html
+<form method="post" asp-page="/Logout">
+    <button type="submit" class="nav-link text-light btn btn-link">Logout</button>
+</form>
+```
 
 ### Cookie Configuration
 
@@ -43,7 +55,8 @@ Handled via `_LoginPartial.cshtml` with a form POST to `/Login?handler=Logout`:
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.LoginPath = "/Login";
-    options.AccessDeniedPath = "/Login";
+    options.AccessDeniedPath = "/AccessDenied";
+    options.LogoutPath = "/Logout";
 });
 ```
 

@@ -22,8 +22,18 @@ builder.Services.AddScoped<IAIQuoteService, ClaudeAIQuoteService>();
 builder.Services.AddScoped<IJobAssignmentService, JobAssignmentService>();
 builder.Services.AddScoped<ITimeEntryService, TimeEntryService>();
 builder.Services.AddScoped<IJobNoteService, JobNoteService>();
+builder.Services.AddScoped<IEmailService, SendGridEmailService>();
+builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
+builder.Services.AddScoped<IPlatformService, PlatformService>();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Stripe configuration
+var stripeSecretKey = builder.Configuration["Stripe:SecretKey"];
+if (!string.IsNullOrEmpty(stripeSecretKey))
+{
+    Stripe.StripeConfiguration.ApiKey = stripeSecretKey;
+}
 
 builder.Services.AddIdentity<AppUser, IdentityRole>(options =>
 {
@@ -52,11 +62,19 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("CanEnterActuals", p => p.RequireRole("Admin", "Owner", "ProjectManager", "Foreman"));
     options.AddPolicy("CanViewReports", p => p.RequireRole("Admin", "Owner", "ProjectManager"));
     options.AddPolicy("CanAssignJobs", p => p.RequireRole("Admin", "Owner", "ProjectManager", "Foreman"));
+    options.AddPolicy("PlatformAdmin", p => p.RequireRole("SuperAdmin"));
 });
 
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession();
-builder.Services.AddRazorPages();
+builder.Services.AddRazorPages(options =>
+{
+    options.Conventions.AuthorizeFolder("/Platform", "PlatformAdmin");
+})
+.AddMvcOptions(options =>
+{
+    options.Filters.Add<MetalMetrics.Web.Filters.SubscriptionPageFilter>();
+});
 
 var app = builder.Build();
 
@@ -80,6 +98,24 @@ app.UseAuthorization();
 
 app.MapRazorPages();
 
+// Stripe webhook endpoint
+app.MapPost("/api/stripe/webhook", async (HttpContext context, ISubscriptionService subscriptionService) =>
+{
+    using var reader = new StreamReader(context.Request.Body);
+    var json = await reader.ReadToEndAsync();
+    var signature = context.Request.Headers["Stripe-Signature"].ToString();
+
+    try
+    {
+        await subscriptionService.HandleStripeWebhookAsync(json, signature);
+        return Results.Ok();
+    }
+    catch
+    {
+        return Results.BadRequest();
+    }
+}).AllowAnonymous();
+
 // Apply migrations and seed data
 using (var scope = app.Services.CreateScope())
 {
@@ -95,10 +131,13 @@ using (var scope = app.Services.CreateScope())
         }
     }
 
+    // Seed SuperAdmin and plans in ALL environments
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+    var seeder = new DbSeeder(db, userManager, app.Environment.WebRootPath);
+    await seeder.SeedSuperAdminAsync();
+
     if (app.Environment.IsDevelopment())
     {
-        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
-        var seeder = new DbSeeder(db, userManager, app.Environment.WebRootPath);
         await seeder.SeedAsync();
     }
 }

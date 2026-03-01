@@ -1,0 +1,40 @@
+@page
+@model MetalMetrics.Web.Pages.Billing.SubscribeModel
+@{
+    ViewData["Title"] = "Subscribe";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <h2 class="text-center mb-4">Choose Your Plan</h2>
+        <p class="text-center text-muted mb-4">Unlock all MetalMetrics features with a subscription.</p>
+
+        <div class="row justify-content-center">
+            @foreach (var plan in Model.Plans)
+            {
+                <div class="col-md-5 mb-3">
+                    <div class="card shadow-sm h-100 @(plan.Interval == MetalMetrics.Core.Enums.PlanInterval.Annual ? "border-warning border-2" : "")">
+                        @if (plan.Interval == MetalMetrics.Core.Enums.PlanInterval.Annual)
+                        {
+                            <div class="card-header bg-warning text-dark text-center fw-bold">Best Value</div>
+                        }
+                        <div class="card-body text-center d-flex flex-column">
+                            <h4>@plan.Name</h4>
+                            <div class="my-3">
+                                <span class="display-5 fw-bold">@plan.Price.ToString("C0")</span>
+                                <span class="text-muted">/@(plan.Interval == MetalMetrics.Core.Enums.PlanInterval.Monthly ? "mo" : "yr")</span>
+                            </div>
+                            <p class="text-muted flex-grow-1">@plan.Description</p>
+                            <form method="post">
+                                <input type="hidden" name="priceId" value="@plan.StripePriceId" />
+                                <button type="submit" class="btn @(plan.Interval == MetalMetrics.Core.Enums.PlanInterval.Annual ? "btn-warning" : "btn-outline-warning") btn-lg w-100">
+                                    Subscribe
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>

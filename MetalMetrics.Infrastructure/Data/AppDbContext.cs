@@ -24,6 +24,9 @@ public class AppDbContext : IdentityDbContext<AppUser, IdentityRole, string>
     public DbSet<JobAssignment> JobAssignments => Set<JobAssignment>();
     public DbSet<JobTimeEntry> JobTimeEntries => Set<JobTimeEntry>();
     public DbSet<JobNote> JobNotes => Set<JobNote>();
+    public DbSet<JobAttachment> JobAttachments => Set<JobAttachment>();
+    public DbSet<PlatformPlan> PlatformPlans => Set<PlatformPlan>();
+    public DbSet<SubscriptionEvent> SubscriptionEvents => Set<SubscriptionEvent>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -34,6 +37,14 @@ public class AppDbContext : IdentityDbContext<AppUser, IdentityRole, string>
             entity.Property(t => t.CompanyName)
                 .IsRequired()
                 .HasMaxLength(200);
+
+            entity.Property(t => t.StripeCustomerId).HasMaxLength(255);
+            entity.Property(t => t.StripeSubscriptionId).HasMaxLength(255);
+            entity.Property(t => t.StripePriceId).HasMaxLength(255);
+
+            entity.HasIndex(t => t.StripeCustomerId)
+                .IsUnique()
+                .HasFilter("[StripeCustomerId] IS NOT NULL");
 
             entity.HasOne(t => t.Settings)
                 .WithOne(s => s.Tenant)
@@ -156,6 +167,47 @@ public class AppDbContext : IdentityDbContext<AppUser, IdentityRole, string>
                 .WithMany(j => j.Notes)
                 .HasForeignKey(n => n.JobId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<JobAttachment>(entity =>
+        {
+            entity.HasIndex(a => a.JobId);
+            entity.Property(a => a.FileName).IsRequired().HasMaxLength(500);
+            entity.Property(a => a.StoredFileName).IsRequired().HasMaxLength(500);
+            entity.Property(a => a.ContentType).HasMaxLength(200);
+            entity.Property(a => a.Category).IsRequired().HasMaxLength(50);
+            entity.Property(a => a.Description).HasMaxLength(500);
+            entity.Property(a => a.UploadedByName).HasMaxLength(200);
+
+            entity.HasOne(a => a.Job)
+                .WithMany(j => j.Attachments)
+                .HasForeignKey(a => a.JobId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<PlatformPlan>(entity =>
+        {
+            entity.Property(p => p.Name).IsRequired().HasMaxLength(100);
+            entity.Property(p => p.Description).HasMaxLength(500);
+            entity.Property(p => p.Price).HasColumnType("decimal(18,2)");
+            entity.Property(p => p.StripePriceId).HasMaxLength(255);
+            entity.Property(p => p.StripeProductId).HasMaxLength(255);
+
+            entity.HasIndex(p => p.StripePriceId)
+                .IsUnique()
+                .HasFilter("[StripePriceId] IS NOT NULL");
+        });
+
+        modelBuilder.Entity<SubscriptionEvent>(entity =>
+        {
+            entity.HasIndex(e => e.TenantId);
+            entity.Property(e => e.EventType).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.StripeEventId).HasMaxLength(255);
+            entity.Property(e => e.Details).HasMaxLength(4000);
+
+            entity.HasIndex(e => e.StripeEventId)
+                .IsUnique()
+                .HasFilter("[StripeEventId] IS NOT NULL");
         });
     }
 

@@ -66,6 +66,55 @@ public class DbSeeder
         _webRootPath = webRootPath;
     }
 
+    public async Task SeedSuperAdminAsync()
+    {
+        if (await _db.Users.AnyAsync(u => u.Role == AppRole.SuperAdmin)) return;
+
+        var superAdmin = new AppUser
+        {
+            UserName = "admin@metalmetrics.io",
+            Email = "admin@metalmetrics.io",
+            FullName = "Platform Admin",
+            TenantId = Guid.Empty,
+            Role = AppRole.SuperAdmin,
+            EmailConfirmed = true
+        };
+        await _userManager.CreateAsync(superAdmin, "SuperAdmin123!");
+        await _userManager.AddToRoleAsync(superAdmin, AppRole.SuperAdmin.ToString());
+        await _userManager.AddClaimAsync(superAdmin,
+            new System.Security.Claims.Claim("TenantId", Guid.Empty.ToString()));
+        await _userManager.AddClaimAsync(superAdmin,
+            new System.Security.Claims.Claim("FullName", superAdmin.FullName));
+
+        // Seed platform plans
+        if (!await _db.PlatformPlans.AnyAsync())
+        {
+            _db.PlatformPlans.AddRange(
+                new PlatformPlan
+                {
+                    Name = "Monthly",
+                    Description = "Full access to MetalMetrics, billed monthly",
+                    Interval = Core.Enums.PlanInterval.Monthly,
+                    Price = 99m,
+                    StripePriceId = "price_monthly_placeholder",
+                    StripeProductId = "prod_placeholder",
+                    TrialDays = 14
+                },
+                new PlatformPlan
+                {
+                    Name = "Annual",
+                    Description = "Full access to MetalMetrics, billed annually (save 17%)",
+                    Interval = Core.Enums.PlanInterval.Annual,
+                    Price = 990m,
+                    StripePriceId = "price_annual_placeholder",
+                    StripeProductId = "prod_placeholder",
+                    TrialDays = 14
+                }
+            );
+            await _db.SaveChangesAsync();
+        }
+    }
+
     public async Task SeedAsync()
     {
         if (await _db.Jobs.AnyAsync()) return; // idempotent
@@ -107,6 +156,9 @@ public class DbSeeder
         var tenant = new Tenant
         {
             CompanyName = companyName,
+            SubscriptionStatus = Core.Enums.SubscriptionStatus.Active,
+            IsEnabled = true,
+            TrialEndsAt = DateTime.UtcNow.AddDays(-30), // trial already passed
         };
         tenant.TenantId = tenant.Id;
         _db.Tenants.Add(tenant);

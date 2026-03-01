@@ -17,4 +17,5 @@ public class Job : BaseEntity
     public ICollection<JobAssignment> Assignments { get; set; } = new List<JobAssignment>();
     public ICollection<JobTimeEntry> TimeEntries { get; set; } = new List<JobTimeEntry>();
     public ICollection<JobNote> Notes { get; set; } = new List<JobNote>();
+    public ICollection<JobAttachment> Attachments { get; set; } = new List<JobAttachment>();
 }

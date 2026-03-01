@@ -78,8 +78,14 @@ public class RegisterModel : PageModel
 
         try
         {
-            var tenant = new Tenant { CompanyName = Input.CompanyName };
-            tenant.TenantId = tenant.Id; // Self-referencing for Tenant
+            var tenant = new Tenant
+            {
+                CompanyName = Input.CompanyName,
+                SubscriptionStatus = Core.Enums.SubscriptionStatus.Trial,
+                TrialEndsAt = DateTime.UtcNow.AddDays(14),
+                IsEnabled = true
+            };
+            tenant.TenantId = tenant.Id;
             _db.Tenants.Add(tenant);
 
             var settings = new TenantSettings { TenantId = tenant.Id };
@@ -111,6 +117,9 @@ public class RegisterModel : PageModel
             await _userManager.AddToRoleAsync(user, AppRole.Admin.ToString());
             await _userManager.AddClaimAsync(user, new Claim("TenantId", tenant.Id.ToString()));
             await _userManager.AddClaimAsync(user, new Claim("FullName", user.FullName));
+            await _userManager.AddClaimAsync(user, new Claim("SubscriptionStatus", "Trial"));
+            await _userManager.AddClaimAsync(user, new Claim("TrialEndsAt", tenant.TrialEndsAt.ToString("O")));
+            await _userManager.AddClaimAsync(user, new Claim("TenantEnabled", "true"));
 
             await transaction.CommitAsync();
 

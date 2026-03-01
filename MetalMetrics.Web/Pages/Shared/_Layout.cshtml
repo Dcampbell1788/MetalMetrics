@@ -55,6 +55,15 @@
                                 <li class="nav-item">
                                     <a class="nav-link" asp-page="/Admin/Users">Admin</a>
                                 </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" asp-page="/Billing/Portal">Manage Billing</a>
+                                </li>
+                            }
+                            @if (User.IsInRole("SuperAdmin"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-warning fw-bold" asp-page="/Platform/Index">Platform</a>
+                                </li>
                             }
                         }
                     </ul>
@@ -65,6 +74,30 @@
     </header>
 
     <partial name="_Notifications" />
+
+    @if (User.Identity?.IsAuthenticated == true && !User.IsInRole("SuperAdmin"))
+    {
+        var subStatus = User.FindFirst("SubscriptionStatus")?.Value;
+        if (subStatus == "Trial")
+        {
+            var trialEndStr = User.FindFirst("TrialEndsAt")?.Value;
+            var daysLeft = 0;
+            if (DateTime.TryParse(trialEndStr, out var trialEnd))
+            {
+                daysLeft = Math.Max(0, (int)(trialEnd - DateTime.UtcNow).TotalDays);
+            }
+            <div class="alert alert-warning text-center mb-0 rounded-0 py-2">
+                Your trial expires in <strong>@daysLeft day@(daysLeft != 1 ? "s" : "")</strong>.
+                <a asp-page="/Billing/Subscribe" class="alert-link ms-1">Subscribe now</a>
+            </div>
+        }
+        else if (subStatus == "PastDue")
+        {
+            <div class="alert alert-danger text-center mb-0 rounded-0 py-2">
+                Payment failed. <a asp-page="/Billing/Portal" class="alert-link">Update billing</a> to avoid service interruption.
+            </div>
+        }
+    }
 
     <div class="container flex-grow-1">
         <main role="main" class="pb-3 pt-3">

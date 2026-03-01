@@ -26,7 +26,7 @@ Returns a tuple: parsed response (or null), error message (or null), and prompt 
 
 ### ClaudeAIQuoteService (`Infrastructure/Services/ClaudeAIQuoteService.cs`)
 
-- Uses `IHttpClientFactory` (registered via `builder.Services.AddHttpClient<IAIQuoteService, ClaudeAIQuoteService>()`)
+- Uses `IHttpClientFactory` with a named client (registered via `builder.Services.AddHttpClient("ClaudeAI")` + `builder.Services.AddScoped<IAIQuoteService, ClaudeAIQuoteService>()`). Service retrieves the client via `_httpClientFactory.CreateClient("ClaudeAI")`.
 - API endpoint: `https://api.anthropic.com/v1/messages`
 - Headers: `x-api-key`, `anthropic-version: 2023-06-01`, `Content-Type: application/json`
 

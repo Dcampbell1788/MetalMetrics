@@ -17,9 +17,10 @@
 
 ### Global Error Handler (`Web/Pages/Error.cshtml.cs`)
 
-- `app.UseExceptionHandler("/Error")` in Program.cs
+- `app.UseExceptionHandler("/Error")` in Program.cs (production only)
+- `app.UseStatusCodePagesWithReExecute("/Error/{0}")` for automatic handling of 404, 403, 500 status codes
 - Custom error page shows RequestId for debugging
-- Handles 404, 403, 500 with appropriate messages
+- Handles status codes with appropriate messages
 - Never exposes stack traces to users
 
 ### Claude API Error Handling (`Infrastructure/Services/ClaudeAIQuoteService.cs`)

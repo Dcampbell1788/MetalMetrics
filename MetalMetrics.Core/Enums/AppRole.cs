@@ -7,5 +7,6 @@ public enum AppRole
     ProjectManager,
     Foreman,
     Estimator,
-    Journeyman
+    Journeyman,
+    SuperAdmin
 }

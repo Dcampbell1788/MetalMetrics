@@ -39,15 +39,10 @@ One-to-one with Tenant (cascade delete). Configured in AppDbContext OnModelCreat
 
 ### Default Values (created during registration)
 
-Created in `Register.cshtml.cs` alongside the Tenant:
+Created in `Register.cshtml.cs` alongside the Tenant with entity defaults:
 ```csharp
-new TenantSettings
-{
-    DefaultLaborRate = 75m,
-    DefaultMachineRate = 150m,
-    DefaultOverheadPercent = 15m,
-    TargetMarginPercent = 20m
-}
+var settings = new TenantSettings { TenantId = tenant.Id };
+// Entity defaults: LaborRate=75, MachineRate=150, Overhead=30%, TargetMargin=20%
 ```
 
 ### Demo Seed Data Values

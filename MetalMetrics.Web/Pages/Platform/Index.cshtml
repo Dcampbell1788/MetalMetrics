@@ -1,0 +1,75 @@
+@page
+@model MetalMetrics.Web.Pages.Platform.IndexModel
+@{
+    ViewData["Title"] = "Platform Dashboard";
+    Layout = "/Pages/Platform/_PlatformLayout.cshtml";
+}
+
+<h2 class="mb-4"><span class="text-warning">Platform</span> Dashboard</h2>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card shadow-sm border-start border-4 border-primary">
+            <div class="card-body">
+                <div class="text-muted small">Total Tenants</div>
+                <h3 class="mb-0">@Model.Dashboard.TotalTenants</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border-start border-4 border-success">
+            <div class="card-body">
+                <div class="text-muted small">Active</div>
+                <h3 class="mb-0 text-success">@Model.Dashboard.ActiveTenants</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border-start border-4 border-warning">
+            <div class="card-body">
+                <div class="text-muted small">Trial</div>
+                <h3 class="mb-0 text-warning">@Model.Dashboard.TrialTenants</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border-start border-4 border-danger">
+            <div class="card-body">
+                <div class="text-muted small">Past Due</div>
+                <h3 class="mb-0 text-danger">@Model.Dashboard.PastDueTenants</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card shadow-sm border-start border-4 border-info">
+            <div class="card-body">
+                <div class="text-muted small">MRR</div>
+                <h3 class="mb-0">@Model.Dashboard.MRR.ToString("C0")</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="text-muted small">Total Users</div>
+                <h3 class="mb-0">@Model.Dashboard.TotalUsers</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="text-muted small">Total Jobs</div>
+                <h3 class="mb-0">@Model.Dashboard.TotalJobs</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="d-flex gap-2">
+    <a asp-page="/Platform/Tenants/Index" class="btn btn-outline-warning">View All Tenants</a>
+    <a asp-page="/Platform/Events" class="btn btn-outline-secondary">Subscription Events</a>
+</div>

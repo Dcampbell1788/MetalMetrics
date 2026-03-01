@@ -1,9 +1,11 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using MetalMetrics.Core.Entities;
+using MetalMetrics.Infrastructure.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.EntityFrameworkCore;
 
 namespace MetalMetrics.Web.Pages;
 
@@ -11,11 +13,13 @@ public class LoginModel : PageModel
 {
     private readonly SignInManager<AppUser> _signInManager;
     private readonly UserManager<AppUser> _userManager;
+    private readonly AppDbContext _db;
 
-    public LoginModel(SignInManager<AppUser> signInManager, UserManager<AppUser> userManager)
+    public LoginModel(SignInManager<AppUser> signInManager, UserManager<AppUser> userManager, AppDbContext db)
     {
         _signInManager = signInManager;
         _userManager = userManager;
+        _db = db;
     }
 
     [BindProperty]
@@ -71,7 +75,7 @@ public class LoginModel : PageModel
 
         if (result.Succeeded)
         {
-            // Refresh claims for TenantId, FullName, and Role
+            // Refresh claims for TenantId, FullName, and subscription
             var claims = await _userManager.GetClaimsAsync(user);
             if (!claims.Any(c => c.Type == "TenantId"))
             {
@@ -81,6 +85,27 @@ public class LoginModel : PageModel
             {
                 await _userManager.AddClaimAsync(user, new Claim("FullName", user.FullName));
             }
+
+            // Add/refresh subscription claims from tenant
+            var tenant = await _db.Tenants.FindAsync(user.TenantId);
+            if (tenant != null)
+            {
+                var subClaim = claims.FirstOrDefault(c => c.Type == "SubscriptionStatus");
+                if (subClaim != null) await _userManager.RemoveClaimAsync(user, subClaim);
+                await _userManager.AddClaimAsync(user, new Claim("SubscriptionStatus", tenant.SubscriptionStatus.ToString()));
+
+                var trialClaim = claims.FirstOrDefault(c => c.Type == "TrialEndsAt");
+                if (trialClaim != null) await _userManager.RemoveClaimAsync(user, trialClaim);
+                await _userManager.AddClaimAsync(user, new Claim("TrialEndsAt", tenant.TrialEndsAt.ToString("O")));
+
+                var enabledClaim = claims.FirstOrDefault(c => c.Type == "TenantEnabled");
+                if (enabledClaim != null) await _userManager.RemoveClaimAsync(user, enabledClaim);
+                await _userManager.AddClaimAsync(user, new Claim("TenantEnabled", tenant.IsEnabled.ToString().ToLower()));
+            }
+
+            // Re-sign in to refresh the cookie with new claims
+            await _signInManager.SignOutAsync();
+            await _signInManager.SignInAsync(user, Input.RememberMe);
 
             return LocalRedirect(returnUrl);
         }

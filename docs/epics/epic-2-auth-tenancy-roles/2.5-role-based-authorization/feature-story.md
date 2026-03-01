@@ -20,22 +20,16 @@
 ```csharp
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("AdminOnly", p =>
-        p.RequireClaim("Role", "Admin", "Owner"));
-    options.AddPolicy("CanManageJobs", p =>
-        p.RequireClaim("Role", "Admin", "Owner", "ProjectManager", "Foreman"));
-    options.AddPolicy("CanQuote", p =>
-        p.RequireClaim("Role", "Admin", "Owner", "ProjectManager", "Estimator"));
-    options.AddPolicy("CanEnterActuals", p =>
-        p.RequireClaim("Role", "Admin", "Owner", "ProjectManager", "Foreman"));
-    options.AddPolicy("CanViewReports", p =>
-        p.RequireClaim("Role", "Admin", "Owner", "ProjectManager"));
-    options.AddPolicy("CanAssignJobs", p =>
-        p.RequireClaim("Role", "Admin", "Owner", "ProjectManager", "Foreman"));
+    options.AddPolicy("AdminOnly", p => p.RequireRole("Admin", "Owner"));
+    options.AddPolicy("CanManageJobs", p => p.RequireRole("Admin", "Owner", "ProjectManager", "Foreman"));
+    options.AddPolicy("CanQuote", p => p.RequireRole("Admin", "Owner", "ProjectManager", "Estimator"));
+    options.AddPolicy("CanEnterActuals", p => p.RequireRole("Admin", "Owner", "ProjectManager", "Foreman"));
+    options.AddPolicy("CanViewReports", p => p.RequireRole("Admin", "Owner", "ProjectManager"));
+    options.AddPolicy("CanAssignJobs", p => p.RequireRole("Admin", "Owner", "ProjectManager", "Foreman"));
 });
 ```
 
-Note: Uses `RequireClaim("Role", ...)` not `RequireRole(...)` because roles are stored as custom claims.
+Uses `RequireRole(...)` with ASP.NET Identity roles (users are added to roles via `UserManager.AddToRoleAsync()`).
 
 ### Page-Level Authorization
 
@@ -57,7 +51,11 @@ Journeyman, Estimator, and Foreman only see jobs they are assigned to (filtered 
 
 ### Navigation Menu
 
-`_Layout.cshtml` uses `User.HasClaim("Role", ...)` to show/hide nav items per role.
+`_Layout.cshtml` uses `User.IsInRole(...)` to show/hide nav items per role.
+
+### AccessDenied Page (`Web/Pages/AccessDenied.cshtml.cs`)
+
+When a user tries to access a page they don't have permission for, they are redirected to `/AccessDenied` (configured via `options.AccessDeniedPath = "/AccessDenied"` in Program.cs). Shows a friendly message instead of a raw 403.
 
 ### TenantProvider
 
@@ -69,6 +67,7 @@ Reads `TenantId` claim from `HttpContext.User.Claims`. Returns `Guid.Empty` if u
 
 - [x] 6 authorization policies registered
 - [x] All pages enforce correct role restrictions
-- [x] Nav menu is role-aware
+- [x] Nav menu is role-aware (uses `User.IsInRole()`)
+- [x] AccessDenied page for unauthorized access attempts
 - [x] TenantProvider reads TenantId from claims
 - [x] Role-based job visibility for Journeyman/Estimator/Foreman

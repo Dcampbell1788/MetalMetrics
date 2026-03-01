@@ -1,0 +1,17 @@
+@page
+@model MetalMetrics.Web.Pages.SubscriptionExpiredModel
+@{
+    ViewData["Title"] = "Subscription Expired";
+}
+
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6 text-center">
+        <div class="card shadow-sm">
+            <div class="card-body p-5">
+                <h2 class="text-warning">Subscription Expired</h2>
+                <p class="text-muted mt-3">Your trial or subscription has expired. Subscribe now to continue using MetalMetrics.</p>
+                <a asp-page="/Billing/Subscribe" class="btn btn-warning btn-lg mt-3">Subscribe Now</a>
+            </div>
+        </div>
+    </div>
+</div>

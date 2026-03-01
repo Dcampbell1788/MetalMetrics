@@ -1,0 +1,19 @@
+@{
+    Layout = "/Pages/Shared/_Layout.cshtml";
+}
+
+<div class="mb-3">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a asp-page="/Platform/Index" class="text-warning">Platform</a></li>
+            @if (ViewData["PlatformSection"] != null)
+            {
+                <li class="breadcrumb-item active">@ViewData["PlatformSection"]</li>
+            }
+        </ol>
+    </nav>
+</div>
+
+@RenderBody()
+
+@await RenderSectionAsync("Scripts", required: false)
