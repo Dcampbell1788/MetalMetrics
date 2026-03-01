@@ -22,27 +22,39 @@ SendGrid requires sender verification before you can send email.
 **For development** — use Single Sender Verification:
 1. Go to **Settings → Sender Authentication → Single Sender Verification**
 2. Click **Create a Sender**
-3. Fill in your details (use a real email you can verify)
-4. Check your inbox and click the verification link
+3. Fill in the form:
+   - **From Name:** `MetalMetrics`
+   - **From Email Address:** a real email you own and can check (e.g., your personal or work email)
+   - **Reply To:** same email
+   - **Company Address:** your address (required by CAN-SPAM regulations)
+   - **Nickname:** `MetalMetrics Dev` (internal label, not shown to recipients)
+4. Click **Create**
+5. Check your inbox for the verification email from SendGrid and click **Verify Single Sender**
 
-**For production** — use Domain Authentication for better deliverability.
+> **Important:** The "From Email Address" you verify here must match the `SendGrid:SenderEmail` config value. Since `appsettings.json` defaults to `noreply@metalmetrics.app` (which you can't verify), you'll need to override it in User Secrets with the email you actually verified — see Step 4 below.
+
+**For production** — use Domain Authentication instead of Single Sender for better deliverability and no per-address verification.
 
 ### 3. Generate an API key
 
 1. Go to **Settings → API Keys**
 2. Click **Create API Key**
-3. Name it (e.g., `metalmetrics-dev`)
-4. Select **Restricted Access** and enable only **Mail Send → Full Access**
-5. Click **Create & View**
-6. Copy the key — it starts with `SG.`
+   - **API Key Name:** `metalmetrics-dev`
+   - **API Key Permissions:** select **Restricted Access**
+3. In the permissions list, enable only **Mail Send → Full Access** (leave everything else disabled)
+4. Click **Create & View**
+5. Copy the key immediately — it starts with `SG.` and is only shown once
 
-### 4. Store the key in User Secrets
+### 4. Store secrets in User Secrets
 
 From the `MetalMetrics.Web` directory:
 
 ```bash
 dotnet user-secrets set "SendGrid:ApiKey" "SG.YOUR-KEY-HERE"
+dotnet user-secrets set "SendGrid:SenderEmail" "your-verified-email@example.com"
 ```
+
+The `SenderEmail` override is required for local development because the default `noreply@metalmetrics.app` won't match your verified sender identity. Use the exact email you verified in Step 2.
 
 ## Configuration
 
