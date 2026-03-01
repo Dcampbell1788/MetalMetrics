@@ -44,7 +44,7 @@ public class IndexModel : PageModel
     public async Task OnGetAsync()
     {
         if (From == default)
-            From = DateTime.UtcNow.AddDays(-90).Date;
+            From = DateTime.UtcNow.AddDays(-365).Date;
         if (To == default)
             To = DateTime.UtcNow.Date;
 
@@ -63,13 +63,13 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnGetDownloadPdfAsync()
     {
-        if (From == default) From = DateTime.UtcNow.AddDays(-90).Date;
+        if (From == default) From = DateTime.UtcNow.AddDays(-365).Date;
         if (To == default) To = DateTime.UtcNow.Date;
 
         var jobs = await _reportsService.GetJobSummariesAsync(From, To);
         var customers = await _reportsService.GetCustomerProfitabilityAsync(From, To);
         var jobCount = jobs.Count;
-        var totalRevenue = jobs.Sum(j => j.QuotePrice);
+        var totalRevenue = jobs.Sum(j => j.ActualRevenue);
         var avgMargin = jobs.Count > 0 ? jobs.Average(j => j.ActualMarginPercent) : 0;
 
         var tenantId = Guid.Parse(User.FindFirst("TenantId")!.Value);

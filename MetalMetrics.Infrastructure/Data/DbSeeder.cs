@@ -224,20 +224,63 @@ public class DbSeeder
 
         var customers = profitable ? PrecisionCustomers : BudgetCustomers;
 
-        var now = DateTime.UtcNow;
-        int jobCount = profitable ? 24 : 16;
         var laborRate = settings.DefaultLaborRate;
         var machineRate = settings.DefaultMachineRate;
         var overheadPct = settings.DefaultOverheadPercent;
 
-        for (int i = 0; i < jobCount; i++)
+        // Seasonal monthly job distribution over 12 months (Mar 2025 – Feb 2026)
+        // Precision: 58 jobs — busier spring/summer (construction season), slower winter
+        // Budget: 35 jobs — same pattern, just fewer jobs across the board
+        // Winter months get enough jobs for recent date ranges to show completed data
+        var monthlySchedule = profitable
+            ? new (int Year, int Month, int Count)[]
+            {
+                (2025, 3, 4), (2025, 4, 5), (2025, 5, 5),   // Spring ramp-up: 14 jobs
+                (2025, 6, 6), (2025, 7, 6), (2025, 8, 5),    // Summer peak:    17 jobs
+                (2025, 9, 5), (2025, 10, 4), (2025, 11, 4),   // Fall steady:    13 jobs
+                (2025, 12, 4), (2026, 1, 5), (2026, 2, 5),    // Winter slow:    14 jobs
+            }
+            : new (int Year, int Month, int Count)[]
+            {
+                (2025, 3, 3), (2025, 4, 3), (2025, 5, 3),    // 9 jobs
+                (2025, 6, 4), (2025, 7, 4), (2025, 8, 3),    // 11 jobs
+                (2025, 9, 3), (2025, 10, 2), (2025, 11, 2),   // 7 jobs
+                (2025, 12, 2), (2026, 1, 3), (2026, 2, 3),    // 8 jobs
+            };
+
+        // Build individual job creation dates spread within each month
+        var jobDates = new List<DateTime>();
+        foreach (var (year, month, count) in monthlySchedule)
+        {
+            int daysInMonth = DateTime.DaysInMonth(year, month);
+            for (int j = 0; j < count; j++)
+            {
+                int day = Math.Max(1, (j + 1) * daysInMonth / (count + 1)) + _rng.Next(-1, 2);
+                day = Math.Clamp(day, 1, daysInMonth);
+                jobDates.Add(new DateTime(year, month, day,
+                    8 + _rng.Next(0, 8), _rng.Next(0, 60), 0, DateTimeKind.Utc));
+            }
+        }
+
+        // Status based on job age relative to "today" (Mar 1, 2026):
+        // > 38 days old → Completed/Invoiced (enough time to finish a 3-14 day job)
+        // 10-38 days old → InProgress (recently started)
+        // < 10 days old → Quoted (just created)
+        int totalJobs = jobDates.Count;
+        var referenceDate = new DateTime(2026, 3, 1, 0, 0, 0, DateTimeKind.Utc);
+
+        for (int i = 0; i < totalJobs; i++)
         {
             var profile = JobProfiles[i % JobProfiles.Length];
             var customer = customers[_rng.Next(customers.Length)];
+            var createdAt = jobDates[i];
 
-            // Spread jobs across the last 6 months for monthly revenue distribution
-            int daysBack = (i * 180 / jobCount) + _rng.Next(0, 10);
-            var createdAt = now.AddDays(-daysBack);
+            // Determine quarter for Precision's improvement arc
+            int quarter;
+            if (createdAt < new DateTime(2025, 6, 1, 0, 0, 0, DateTimeKind.Utc)) quarter = 1;
+            else if (createdAt < new DateTime(2025, 9, 1, 0, 0, 0, DateTimeKind.Utc)) quarter = 2;
+            else if (createdAt < new DateTime(2025, 12, 1, 0, 0, 0, DateTimeKind.Utc)) quarter = 3;
+            else quarter = 4;
 
             var job = new Job
             {
@@ -250,25 +293,25 @@ public class DbSeeder
                 UpdatedAt = createdAt
             };
 
-            // Status distribution: most completed/invoiced, a few in progress and quoted
-            if (i < jobCount - 4)
+            var daysOld = (referenceDate - createdAt).TotalDays;
+            if (daysOld < 10)
             {
-                job.Status = i % 4 == 0 ? JobStatus.Invoiced : JobStatus.Completed;
-                job.CompletedAt = createdAt.AddDays(_rng.Next(3, 14));
+                job.Status = JobStatus.Quoted;
             }
-            else if (i == jobCount - 3 || i == jobCount - 4)
+            else if (daysOld < 38)
             {
                 job.Status = JobStatus.InProgress;
             }
             else
             {
-                job.Status = JobStatus.Quoted;
+                job.Status = (i % 7 == 0) ? JobStatus.Invoiced : JobStatus.Completed;
+                job.CompletedAt = createdAt.AddDays(_rng.Next(3, 14));
             }
 
             _db.Jobs.Add(job);
             await _db.SaveChangesAsync();
 
-            // Use profile-correlated costs instead of random ranges
+            // Estimate: use profile-correlated costs
             var laborHours = RandDecimal(profile.LaborMin, profile.LaborMax);
             var materialCost = RandDecimal(profile.MatMin, profile.MatMax);
             var machineHours = RandDecimal(profile.MachMin, profile.MachMax);
@@ -279,14 +322,27 @@ public class DbSeeder
             var overhead = subtotal * (overheadPct / 100m);
             var totalEst = subtotal + overhead;
 
-            // Margin multipliers based on industry benchmarks:
-            // Well-run shop: 25-35% gross margin (multiplier 1.30-1.55)
-            // Struggling shop: 9-20% gross margin (multiplier 1.10-1.25) — undercharges to win bids
+            // Margin multiplier — Precision improves through the year, Budget stays flat
+            // Q1: rocky start (new estimator learning, some overruns)
+            // Q2: improving (busier, getting better at pricing)
+            // Q3: hitting stride (tight estimates, efficient production)
+            // Q4: strong finish (well-oiled machine)
             decimal marginMultiplier;
             if (profitable)
-                marginMultiplier = 1.30m + (decimal)(_rng.NextDouble() * 0.25);
+            {
+                marginMultiplier = quarter switch
+                {
+                    1 => 1.15m + (decimal)(_rng.NextDouble() * 0.15),   // 13-23% margin
+                    2 => 1.25m + (decimal)(_rng.NextDouble() * 0.15),   // 20-29% margin
+                    3 => 1.30m + (decimal)(_rng.NextDouble() * 0.20),   // 23-33% margin
+                    _ => 1.35m + (decimal)(_rng.NextDouble() * 0.20),   // 26-35% margin
+                };
+            }
             else
+            {
+                // Budget: consistently undercharges to win bids (9-20% margin)
                 marginMultiplier = 1.10m + (decimal)(_rng.NextDouble() * 0.15);
+            }
 
             var quotePrice = Math.Round(totalEst * marginMultiplier, 2);
 
@@ -309,28 +365,40 @@ public class DbSeeder
             };
             _db.JobEstimates.Add(estimate);
 
-            // Create actuals for completed/invoiced jobs with per-component variance
-            if (job.Status == JobStatus.Completed || job.Status == JobStatus.Invoiced)
+            // Create actuals for completed/invoiced jobs + half of in-progress jobs
+            bool createActuals = job.Status == JobStatus.Completed
+                || job.Status == JobStatus.Invoiced
+                || (job.Status == JobStatus.InProgress && i % 2 == 0);
+
+            if (createActuals)
             {
                 decimal actLaborHours, actMaterialCost, actMachineHours;
 
                 if (profitable)
                 {
-                    // Well-run shop: estimate vs actual variance ±5-10% (industry target)
-                    // Good labor estimates, tight material control (low scrap), efficient machine use
-                    actLaborHours = Math.Round(laborHours * (0.92m + (decimal)(_rng.NextDouble() * 0.16)), 2);     // 0.92-1.08
-                    actMaterialCost = Math.Round(materialCost * (0.95m + (decimal)(_rng.NextDouble() * 0.10)), 2); // 0.95-1.05 (good nesting, 5% scrap)
-                    actMachineHours = Math.Round(machineHours * (0.90m + (decimal)(_rng.NextDouble() * 0.15)), 2); // 0.90-1.05
+                    // Precision: variance tightens as the year progresses
+                    (decimal lMin, decimal lRange,
+                     decimal mMin, decimal mRange,
+                     decimal mcMin, decimal mcRange) = quarter switch
+                    {
+                        1 => (0.95m, 0.25m, 0.95m, 0.20m, 0.90m, 0.20m),  // Q1: wide variance, learning
+                        2 => (0.93m, 0.18m, 0.95m, 0.13m, 0.92m, 0.15m),  // Q2: tightening up
+                        3 => (0.93m, 0.14m, 0.95m, 0.10m, 0.92m, 0.13m),  // Q3: good control
+                        _ => (0.92m, 0.12m, 0.95m, 0.08m, 0.92m, 0.11m),  // Q4: tight, efficient
+                    };
+
+                    actLaborHours = Math.Round(laborHours * (lMin + (decimal)(_rng.NextDouble() * (double)lRange)), 2);
+                    actMaterialCost = Math.Round(materialCost * (mMin + (decimal)(_rng.NextDouble() * (double)mRange)), 2);
+                    actMachineHours = Math.Round(machineHours * (mcMin + (decimal)(_rng.NextDouble() * (double)mcRange)), 2);
                 }
                 else
                 {
-                    // Struggling shop: 20-30%+ estimate variance (industry reality without tracking)
-                    // Labor always runs over (bad estimates), material waste from poor nesting (10-20% scrap)
-                    actLaborHours = Math.Round(laborHours * (1.05m + (decimal)(_rng.NextDouble() * 0.35)), 2);     // 1.05-1.40 (always over)
-                    actMaterialCost = Math.Round(materialCost * (0.95m + (decimal)(_rng.NextDouble() * 0.30)), 2); // 0.95-1.25 (waste/scrap)
-                    actMachineHours = Math.Round(machineHours * (0.90m + (decimal)(_rng.NextDouble() * 0.25)), 2); // 0.90-1.15
+                    // Budget: consistently bad estimates, labor always runs over
+                    actLaborHours = Math.Round(laborHours * (1.05m + (decimal)(_rng.NextDouble() * 0.35)), 2);
+                    actMaterialCost = Math.Round(materialCost * (0.95m + (decimal)(_rng.NextDouble() * 0.30)), 2);
+                    actMachineHours = Math.Round(machineHours * (0.90m + (decimal)(_rng.NextDouble() * 0.25)), 2);
 
-                    // Every 3rd job has a major overrun: rework, scope creep, or blown estimate
+                    // Every 3rd job: major overrun (rework, scope creep, blown estimate)
                     if (i % 3 == 0)
                     {
                         actLaborHours = Math.Round(actLaborHours * 1.25m, 2);
@@ -344,7 +412,17 @@ public class DbSeeder
                 var actOverhead = actSubtotal * (overheadPct / 100m);
                 var actTotal = actSubtotal + actOverhead;
 
-                var actRevenue = quotePrice; // invoice the quoted amount
+                // Revenue: ~70% at quote price, ~20% change orders (+5-15%), ~10% discounted (-5-10%)
+                // Budget always invoices at quote price (no leverage for change orders)
+                var actRevenue = quotePrice;
+                if (profitable && (job.Status == JobStatus.Completed || job.Status == JobStatus.Invoiced))
+                {
+                    int revenueRoll = _rng.Next(100);
+                    if (revenueRoll >= 90)       // 10%: negotiated discount
+                        actRevenue = Math.Round(quotePrice * (0.90m + (decimal)(_rng.NextDouble() * 0.05)), 2);
+                    else if (revenueRoll >= 70)  // 20%: change orders added revenue
+                        actRevenue = Math.Round(quotePrice * (1.05m + (decimal)(_rng.NextDouble() * 0.10)), 2);
+                }
 
                 var actuals = new JobActuals
                 {
