@@ -79,7 +79,7 @@ public class PdfService : IPdfService
                     var profit = estimate.QuotePrice - estimate.TotalEstimatedCost;
                     col.Item().PaddingTop(5).Row(row =>
                     {
-                        row.RelativeColumn().Column(c =>
+                        row.RelativeItem().Column(c =>
                         {
                             c.Item().Text(t => { t.Span("Quote Price: ").SemiBold(); t.Span(estimate.QuotePrice.ToString("C")); });
                             c.Item().Text(t => { t.Span("Estimated Margin: ").SemiBold(); t.Span($"{estimate.EstimatedMarginPercent:F1}%").FontColor(profit >= 0 ? ProfitColor : LossColor); });
@@ -178,12 +178,12 @@ public class PdfService : IPdfService
                     col.Item().PaddingTop(15).Text("Margin Analysis").FontSize(14).SemiBold();
                     col.Item().PaddingTop(5).Row(row =>
                     {
-                        row.RelativeColumn().Column(c =>
+                        row.RelativeItem().Column(c =>
                         {
                             c.Item().Text(t => { t.Span("Quote Price: ").SemiBold(); t.Span(report.QuotedPrice.ToString("C")); });
                             c.Item().Text(t => { t.Span("Actual Revenue: ").SemiBold(); t.Span(report.ActualRevenue.ToString("C")); });
                         });
-                        row.RelativeColumn().Column(c =>
+                        row.RelativeItem().Column(c =>
                         {
                             c.Item().Text(t => { t.Span("Est. Margin: ").SemiBold(); t.Span($"{report.EstimatedMarginPercent:F1}%"); });
                             c.Item().Text(t => { t.Span("Margin Drift: ").SemiBold(); t.Span($"{(report.MarginDriftPercent >= 0 ? "+" : "")}{report.MarginDriftPercent:F1} pts").FontColor(report.MarginDriftPercent < 0 ? LossColor : ProfitColor); });
@@ -214,15 +214,15 @@ public class PdfService : IPdfService
                     // KPIs
                     col.Item().Row(row =>
                     {
-                        row.RelativeColumn().Column(c =>
+                        row.RelativeItem().Column(c =>
                         {
                             c.Item().Text(t => { t.Span("Jobs in Period: ").SemiBold(); t.Span(jobCount.ToString()); });
                         });
-                        row.RelativeColumn().Column(c =>
+                        row.RelativeItem().Column(c =>
                         {
                             c.Item().Text(t => { t.Span("Total Revenue: ").SemiBold(); t.Span(totalRevenue.ToString("C0")); });
                         });
-                        row.RelativeColumn().Column(c =>
+                        row.RelativeItem().Column(c =>
                         {
                             c.Item().Text(t => { t.Span("Avg Margin: ").SemiBold(); t.Span($"{avgMargin:F1}%").FontColor(avgMargin >= 0 ? ProfitColor : LossColor); });
                         });
@@ -313,12 +313,12 @@ public class PdfService : IPdfService
     {
         container.Background(HeaderBg).Padding(15).Row(row =>
         {
-            row.RelativeColumn().Column(col =>
+            row.RelativeItem().Column(col =>
             {
                 col.Item().Text(companyName).FontSize(16).Bold().FontColor(Colors.White);
                 col.Item().Text(title).FontSize(12).FontColor(AccentColor);
             });
-            row.ConstantColumn(150).AlignRight().AlignMiddle()
+            row.ConstantItem(150).AlignRight().AlignMiddle()
                 .Text($"Generated {DateTime.UtcNow:MMM dd, yyyy}").FontSize(9).FontColor(Colors.Grey.Lighten2);
         });
     }
