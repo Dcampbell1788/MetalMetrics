@@ -655,6 +655,75 @@ a:hover .card.shadow-sm { transform: translateY(-2px); }
 }
 
 /* ============================================
+   ADMIN — USER LIST
+   ============================================ */
+
+.mm-user-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #e2e8f0;
+  transition: background 0.1s ease;
+}
+
+.mm-user-item:last-child {
+  border-bottom: none;
+}
+
+.mm-user-item:hover {
+  background: #f8fafc;
+}
+
+.mm-user-left {
+  min-width: 0;
+  flex: 1;
+}
+
+.mm-user-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--mm-gold);
+  color: var(--mm-navy);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+
+.mm-user-info {
+  min-width: 0;
+}
+
+.mm-user-info > div {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mm-user-right {
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+@media (max-width: 575.98px) {
+  .mm-user-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .mm-user-right {
+    width: 100%;
+    margin-top: 0.5rem;
+  }
+}
+
+/* ============================================
    PRINT STYLES
    ============================================ */
 
