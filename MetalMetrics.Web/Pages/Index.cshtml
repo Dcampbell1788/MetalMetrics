@@ -1,164 +1,235 @@
 @page
 @model IndexModel
 @{
+    Layout = "_MarketingLayout";
     ViewData["Title"] = "Home";
 }
 
 <!-- Hero Section -->
-<div class="text-center py-5">
-    <h1 class="display-3 fw-bold mb-3">
-        <span class="text-warning">Metal</span><span>Metrics</span>
-    </h1>
-    <p class="lead text-muted mb-4" style="max-width: 600px; margin: 0 auto;">
-        The profitability platform built for sheetmetal fabrication shops.
-        Quote smarter, track every dollar, and know your margins before the job ships.
-    </p>
-    <div class="d-grid gap-2 d-sm-flex justify-content-sm-center mb-5">
-        <a class="btn btn-warning btn-lg px-4" asp-page="/Register">Get Started Free</a>
-        <a class="btn btn-outline-dark btn-lg px-4" asp-page="/Login">Sign In</a>
+<section class="mm-hero">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-7">
+                <div class="mm-hero-badge">Built for Fabrication Shops</div>
+                <h1>Stop guessing your margins.<br />Start <span style="color: var(--mm-gold);">measuring</span> them.</h1>
+                <p class="lead mt-3 mb-4">
+                    MetalMetrics is the profitability platform for sheetmetal fabrication. Quote smarter,
+                    track every dollar, and know your margins before the job ships.
+                </p>
+                <div class="d-flex gap-3 flex-wrap">
+                    <a class="btn btn-gold btn-lg px-4" asp-page="/Register">Start Free Trial</a>
+                    <a class="btn btn-outline-gold btn-lg px-4" asp-page="/Login">Sign In</a>
+                </div>
+            </div>
+            <div class="col-lg-5 d-none d-lg-block">
+                <div class="mm-mock-dashboard">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="small" style="color: var(--mm-sidebar-text);">Shop Dashboard</span>
+                        <span class="badge" style="background: var(--mm-gold); color: var(--mm-navy);">Live</span>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="mm-mock-stat-label">Avg Margin</div>
+                            <div class="mm-mock-stat-value" style="color: var(--mm-profit);">24.8%</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="mm-mock-stat-label">Monthly Revenue</div>
+                            <div class="mm-mock-stat-value" style="color: #38bdf8;">$127K</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="mm-mock-stat-label">Active Jobs</div>
+                            <div class="mm-mock-stat-value" style="color: #ffffff;">18</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="mm-mock-stat-label">On Target</div>
+                            <div class="mm-mock-stat-value" style="color: var(--mm-gold);">94%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-</div>
+</section>
 
 <!-- Features Section -->
-<div class="row g-4 mb-5">
-    <div class="col-md-3">
-        <div class="card shadow-sm h-100 border-0 feature-card">
-            <div class="card-body text-center p-4">
-                <div class="display-6 text-warning mb-3">&#9889;</div>
-                <h5 class="card-title fw-bold">Fast Quoting</h5>
-                <p class="card-text text-muted">
-                    Build detailed cost estimates with labor, material, and machine hours.
-                    Set your margins and generate professional quotes in minutes.
-                </p>
+<section class="mm-section" id="features">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="mm-section-title">Everything you need to protect your margins</h2>
+            <p class="mm-section-subtitle mx-auto">From first quote to final invoice, MetalMetrics gives you complete visibility into job profitability.</p>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-6 col-lg-3">
+                <div class="mm-feature-card">
+                    <div class="mm-feature-icon"><i class="bi bi-lightning-charge-fill"></i></div>
+                    <h5 class="fw-bold mb-2">Fast Quoting</h5>
+                    <p class="text-muted small mb-0">Build detailed cost estimates with labor, material, and machine hours. Set your margins and generate quotes in minutes.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="mm-feature-card">
+                    <div class="mm-feature-icon"><i class="bi bi-robot"></i></div>
+                    <h5 class="fw-bold mb-2">AI-Assisted Estimates</h5>
+                    <p class="text-muted small mb-0">Describe the job and let AI suggest labor hours, material costs, and machine time. Review, adjust, and accept.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="mm-feature-card">
+                    <div class="mm-feature-icon"><i class="bi bi-graph-up-arrow"></i></div>
+                    <h5 class="fw-bold mb-2">Real-Time Tracking</h5>
+                    <p class="text-muted small mb-0">Log actual labor, materials, and machine time as jobs progress. See estimated vs. actual costs side by side.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="mm-feature-card">
+                    <div class="mm-feature-icon"><i class="bi bi-bullseye"></i></div>
+                    <h5 class="fw-bold mb-2">Margin Insight</h5>
+                    <p class="text-muted small mb-0">Dashboard analytics show margin trends, estimating accuracy, and customer profitability so you bid smarter.</p>
+                </div>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card shadow-sm h-100 border-0 feature-card">
-            <div class="card-body text-center p-4">
-                <div class="display-6 text-warning mb-3">&#129302;</div>
-                <h5 class="card-title fw-bold">AI-Assisted Estimates</h5>
-                <p class="card-text text-muted">
-                    Describe the job and let AI suggest labor hours, material costs, and machine time.
-                    Review, adjust, and accept.
-                </p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card shadow-sm h-100 border-0 feature-card">
-            <div class="card-body text-center p-4">
-                <div class="display-6 text-warning mb-3">&#128200;</div>
-                <h5 class="card-title fw-bold">Real-Time Tracking</h5>
-                <p class="card-text text-muted">
-                    Log actual labor, materials, and machine time as jobs progress.
-                    See estimated vs. actual costs side by side.
-                </p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card shadow-sm h-100 border-0 feature-card">
-            <div class="card-body text-center p-4">
-                <div class="display-6 text-warning mb-3">&#127919;</div>
-                <h5 class="card-title fw-bold">Margin Insight</h5>
-                <p class="card-text text-muted">
-                    Dashboard analytics show margin trends, estimating accuracy,
-                    and customer profitability so you can bid smarter next time.
-                </p>
-            </div>
-        </div>
-    </div>
-</div>
+</section>
 
 <!-- How It Works -->
-<div class="bg-dark text-white rounded-3 p-5 mb-5">
-    <h2 class="text-center fw-bold mb-4">How It Works</h2>
-    <div class="row g-4">
-        <div class="col-md-3 text-center">
-            <div class="rounded-circle bg-warning text-dark d-inline-flex align-items-center justify-content-center mb-3" style="width: 56px; height: 56px; font-size: 1.5rem; font-weight: bold;">1</div>
-            <h6 class="fw-bold">Create a Job</h6>
-            <p class="small text-muted mb-0">Enter the customer, description, and materials for each fabrication job.</p>
+<section class="mm-section mm-section-gray">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="mm-section-title">How It Works</h2>
+            <p class="mm-section-subtitle mx-auto">Four simple steps from job creation to margin insight.</p>
         </div>
-        <div class="col-md-3 text-center">
-            <div class="rounded-circle bg-warning text-dark d-inline-flex align-items-center justify-content-center mb-3" style="width: 56px; height: 56px; font-size: 1.5rem; font-weight: bold;">2</div>
-            <h6 class="fw-bold">Quote It</h6>
-            <p class="small text-muted mb-0">Estimate labor, machine time, and materials. Set your target margin and generate a quote.</p>
-        </div>
-        <div class="col-md-3 text-center">
-            <div class="rounded-circle bg-warning text-dark d-inline-flex align-items-center justify-content-center mb-3" style="width: 56px; height: 56px; font-size: 1.5rem; font-weight: bold;">3</div>
-            <h6 class="fw-bold">Track Actuals</h6>
-            <p class="small text-muted mb-0">Log real hours and costs as the job runs. Compare to your estimate in real time.</p>
-        </div>
-        <div class="col-md-3 text-center">
-            <div class="rounded-circle bg-warning text-dark d-inline-flex align-items-center justify-content-center mb-3" style="width: 56px; height: 56px; font-size: 1.5rem; font-weight: bold;">4</div>
-            <h6 class="fw-bold">Know Your Margins</h6>
-            <p class="small text-muted mb-0">See profitability per job, per customer, and across your whole shop at a glance.</p>
+        <div class="row g-4">
+            <div class="col-md-6 col-lg-3 text-center">
+                <div class="mm-step-number">1</div>
+                <h6 class="fw-bold">Create a Job</h6>
+                <p class="small text-muted mb-0">Enter the customer, description, and materials for each fabrication job.</p>
+            </div>
+            <div class="col-md-6 col-lg-3 text-center">
+                <div class="mm-step-number">2</div>
+                <h6 class="fw-bold">Quote It</h6>
+                <p class="small text-muted mb-0">Estimate labor, machine time, and materials. Set your target margin and generate a quote.</p>
+            </div>
+            <div class="col-md-6 col-lg-3 text-center">
+                <div class="mm-step-number">3</div>
+                <h6 class="fw-bold">Track Actuals</h6>
+                <p class="small text-muted mb-0">Log real hours and costs as the job runs. Compare to your estimate in real time.</p>
+            </div>
+            <div class="col-md-6 col-lg-3 text-center">
+                <div class="mm-step-number">4</div>
+                <h6 class="fw-bold">Know Your Margins</h6>
+                <p class="small text-muted mb-0">See profitability per job, per customer, and across your whole shop at a glance.</p>
+            </div>
         </div>
     </div>
-</div>
+</section>
 
-<!-- Built For Section -->
-<div class="row align-items-center mb-5">
-    <div class="col-md-6">
-        <h2 class="fw-bold mb-3">Built for the Shop Floor</h2>
-        <ul class="list-unstyled">
-            <li class="mb-3 d-flex align-items-start">
-                <span class="text-warning me-2 fs-5">&#10003;</span>
-                <span><strong>Multi-tenant</strong> &mdash; each shop gets its own isolated workspace with role-based access for owners, PMs, estimators, foremen, and journeymen.</span>
-            </li>
-            <li class="mb-3 d-flex align-items-start">
-                <span class="text-warning me-2 fs-5">&#10003;</span>
-                <span><strong>AI-Assisted Quoting</strong> &mdash; let AI analyze your job description and suggest labor, material, and machine estimates based on industry data.</span>
-            </li>
-            <li class="mb-3 d-flex align-items-start">
-                <span class="text-warning me-2 fs-5">&#10003;</span>
-                <span><strong>Mobile-Friendly Actuals</strong> &mdash; foremen and journeymen can log hours and costs from their phone on the shop floor.</span>
-            </li>
-            <li class="mb-3 d-flex align-items-start">
-                <span class="text-warning me-2 fs-5">&#10003;</span>
-                <span><strong>Estimating Accuracy</strong> &mdash; track how close your bids are to reality and improve over time with variance analysis.</span>
-            </li>
-        </ul>
-    </div>
-    <div class="col-md-6">
-        <div class="card shadow border-0">
-            <div class="card-body bg-dark text-white rounded p-4">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <span class="small text-muted">Sample Dashboard</span>
-                    <span class="badge bg-warning text-dark">Demo</span>
-                </div>
-                <div class="row text-center g-3">
-                    <div class="col-6">
-                        <div class="small text-muted">Avg Margin</div>
-                        <div class="fs-3 fw-bold text-success">24.8%</div>
+<!-- Built for the Shop Floor -->
+<section class="mm-section">
+    <div class="container">
+        <div class="row align-items-center g-5">
+            <div class="col-lg-6">
+                <h2 class="mm-section-title mb-4">Built for the Shop Floor</h2>
+                <ul class="mm-checklist list-unstyled">
+                    <li>
+                        <i class="bi bi-check-circle-fill mm-check-icon"></i>
+                        <span><strong>Multi-tenant</strong> &mdash; each shop gets its own isolated workspace with role-based access for owners, PMs, estimators, foremen, and journeymen.</span>
+                    </li>
+                    <li>
+                        <i class="bi bi-check-circle-fill mm-check-icon"></i>
+                        <span><strong>AI-Assisted Quoting</strong> &mdash; let AI analyze your job description and suggest labor, material, and machine estimates.</span>
+                    </li>
+                    <li>
+                        <i class="bi bi-check-circle-fill mm-check-icon"></i>
+                        <span><strong>Mobile-Friendly Actuals</strong> &mdash; foremen and journeymen can log hours and costs from their phone on the shop floor.</span>
+                    </li>
+                    <li>
+                        <i class="bi bi-check-circle-fill mm-check-icon"></i>
+                        <span><strong>Estimating Accuracy</strong> &mdash; track how close your bids are to reality and improve over time with variance analysis.</span>
+                    </li>
+                </ul>
+            </div>
+            <div class="col-lg-6">
+                <div class="mm-mock-dashboard" style="background: var(--mm-navy);">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="small" style="color: var(--mm-sidebar-text);">Sample Dashboard</span>
+                        <span class="badge" style="background: var(--mm-gold); color: var(--mm-navy);">Demo</span>
                     </div>
-                    <div class="col-6">
-                        <div class="small text-muted">Monthly Revenue</div>
-                        <div class="fs-3 fw-bold text-info">$127K</div>
-                    </div>
-                    <div class="col-6">
-                        <div class="small text-muted">Jobs This Month</div>
-                        <div class="fs-3 fw-bold text-white">18</div>
-                    </div>
-                    <div class="col-6">
-                        <div class="small text-muted">On Target</div>
-                        <div class="fs-3 fw-bold text-warning">94%</div>
+                    <div class="row text-center g-3">
+                        <div class="col-6">
+                            <div class="mm-mock-stat-label">Avg Margin</div>
+                            <div class="mm-mock-stat-value" style="color: var(--mm-profit);">24.8%</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="mm-mock-stat-label">Monthly Revenue</div>
+                            <div class="mm-mock-stat-value" style="color: #38bdf8;">$127K</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="mm-mock-stat-label">Jobs This Month</div>
+                            <div class="mm-mock-stat-value" style="color: #ffffff;">18</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="mm-mock-stat-label">On Target</div>
+                            <div class="mm-mock-stat-value" style="color: var(--mm-gold);">94%</div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
+</section>
 
-<!-- CTA Section -->
-<div class="text-center py-5 mb-4">
-    <h2 class="fw-bold mb-3">Stop Guessing. Start Measuring.</h2>
-    <p class="text-muted mb-4" style="max-width: 500px; margin: 0 auto;">
-        Know exactly where your money goes on every job.
-        MetalMetrics gives fabrication shops the visibility they need to grow profitably.
-    </p>
-    <div class="d-flex justify-content-center">
-        <a class="btn btn-warning btn-lg px-5" asp-page="/Register">Create Your Account</a>
+<!-- Pricing -->
+<section class="mm-section mm-section-gray" id="pricing">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="mm-section-title">Simple, Transparent Pricing</h2>
+            <p class="mm-section-subtitle mx-auto">Start with a 14-day free trial. No credit card required.</p>
+        </div>
+        <div class="row g-4 justify-content-center">
+            <div class="col-md-5 col-lg-4">
+                <div class="mm-pricing-card">
+                    <h5 class="fw-bold mb-1">Monthly</h5>
+                    <p class="text-muted small mb-3">Pay as you go</p>
+                    <div class="mm-pricing-amount mb-1">$99<span class="mm-pricing-period">/mo</span></div>
+                    <p class="text-muted small mb-4">per shop, billed monthly</p>
+                    <ul class="list-unstyled text-start small mb-4">
+                        <li class="mb-2"><i class="bi bi-check-lg text-success me-2"></i>Unlimited jobs &amp; quotes</li>
+                        <li class="mb-2"><i class="bi bi-check-lg text-success me-2"></i>Unlimited users</li>
+                        <li class="mb-2"><i class="bi bi-check-lg text-success me-2"></i>AI-assisted estimating</li>
+                        <li class="mb-2"><i class="bi bi-check-lg text-success me-2"></i>Reports &amp; analytics</li>
+                        <li class="mb-2"><i class="bi bi-check-lg text-success me-2"></i>PDF export</li>
+                    </ul>
+                    <a asp-page="/Register" class="btn btn-outline-gold w-100">Start Free Trial</a>
+                </div>
+            </div>
+            <div class="col-md-5 col-lg-4">
+                <div class="mm-pricing-card featured">
+                    <div class="mm-pricing-badge">Save 17%</div>
+                    <h5 class="fw-bold mb-1">Annual</h5>
+                    <p class="text-muted small mb-3">Best value</p>
+                    <div class="mm-pricing-amount mb-1">$990<span class="mm-pricing-period">/yr</span></div>
+                    <p class="text-muted small mb-4">per shop, billed annually</p>
+                    <ul class="list-unstyled text-start small mb-4">
+                        <li class="mb-2"><i class="bi bi-check-lg text-success me-2"></i>Everything in Monthly</li>
+                        <li class="mb-2"><i class="bi bi-check-lg text-success me-2"></i>2 months free</li>
+                        <li class="mb-2"><i class="bi bi-check-lg text-success me-2"></i>Priority support</li>
+                        <li class="mb-2"><i class="bi bi-check-lg text-success me-2"></i>Early access to new features</li>
+                        <li class="mb-2"><i class="bi bi-check-lg text-success me-2"></i>File attachments</li>
+                    </ul>
+                    <a asp-page="/Register" class="btn btn-gold w-100">Start Free Trial</a>
+                </div>
+            </div>
+        </div>
     </div>
-</div>
+</section>
+
+<!-- Final CTA -->
+<section class="mm-cta">
+    <div class="container">
+        <h2 class="fw-bold mb-3" style="font-size: 2rem;">Ready to take control of your margins?</h2>
+        <p class="mb-4" style="color: rgba(255,255,255,0.7); max-width: 500px; margin: 0 auto;">
+            Join fabrication shops that use MetalMetrics to quote smarter, track every dollar, and grow profitably.
+        </p>
+        <a class="btn btn-gold btn-lg px-5" asp-page="/Register">Create Your Account</a>
+    </div>
+</section>

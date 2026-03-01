@@ -1,0 +1,710 @@
+/* ============================================
+   MetalMetrics — Custom Stylesheet
+   ============================================ */
+
+/* --- CSS Variables --- */
+:root {
+  --mm-sidebar-bg: #0f172a;
+  --mm-sidebar-text: #94a3b8;
+  --mm-sidebar-active: #fbbf24;
+  --mm-sidebar-hover: rgba(251, 191, 36, 0.08);
+  --mm-sidebar-width: 250px;
+  --mm-topbar-height: 56px;
+  --mm-content-bg: #f4f6f9;
+  --mm-card-bg: #ffffff;
+  --mm-gold: #f59e0b;
+  --mm-gold-hover: #d97706;
+  --mm-profit: #10b981;
+  --mm-loss: #ef4444;
+  --mm-text-primary: #1e293b;
+  --mm-text-secondary: #64748b;
+  --mm-navy: #0f172a;
+  --mm-navy-light: #1e293b;
+}
+
+/* --- Base --- */
+html {
+  font-size: 14px;
+  position: relative;
+  min-height: 100%;
+}
+
+@media (min-width: 768px) {
+  html { font-size: 16px; }
+}
+
+body {
+  color: var(--mm-text-primary);
+}
+
+a {
+  color: var(--mm-gold-hover);
+}
+
+a:hover {
+  color: var(--mm-gold);
+}
+
+/* --- Focus States --- */
+.btn:focus,
+.btn:active:focus,
+.btn-link.nav-link:focus,
+.form-control:focus,
+.form-check-input:focus {
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem var(--mm-gold);
+}
+
+/* --- Profit/Loss Utilities --- */
+.text-profit { color: var(--mm-profit); }
+.text-loss { color: var(--mm-loss); }
+.bg-profit { background-color: var(--mm-profit); color: #fff; }
+.bg-loss { background-color: var(--mm-loss); color: #fff; }
+
+/* --- Gold Button --- */
+.btn-gold {
+  background-color: var(--mm-gold);
+  color: #000;
+  border: none;
+  font-weight: 600;
+}
+
+.btn-gold:hover {
+  background-color: var(--mm-gold-hover);
+  color: #000;
+}
+
+.btn-outline-gold {
+  border: 2px solid var(--mm-gold);
+  color: var(--mm-gold);
+  background: transparent;
+  font-weight: 600;
+}
+
+.btn-outline-gold:hover {
+  background-color: var(--mm-gold);
+  color: #000;
+}
+
+/* ============================================
+   APP LAYOUT — Sidebar + Topbar
+   ============================================ */
+
+/* --- Sidebar --- */
+.mm-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: var(--mm-sidebar-width);
+  height: 100vh;
+  background: var(--mm-sidebar-bg);
+  color: var(--mm-sidebar-text);
+  display: flex;
+  flex-direction: column;
+  z-index: 1040;
+  transition: transform 0.25s ease;
+  overflow-y: auto;
+}
+
+.mm-sidebar-brand {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.mm-sidebar-brand a {
+  text-decoration: none;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.mm-sidebar-brand .brand-metal {
+  color: var(--mm-sidebar-active);
+}
+
+.mm-sidebar-brand .brand-metrics {
+  color: #ffffff;
+}
+
+/* Nav items */
+.mm-sidebar-nav {
+  list-style: none;
+  padding: 0.75rem 0;
+  margin: 0;
+  flex: 1;
+}
+
+.mm-sidebar-nav li a {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 1.5rem;
+  color: var(--mm-sidebar-text);
+  text-decoration: none;
+  font-size: 0.9rem;
+  border-left: 3px solid transparent;
+  transition: all 0.15s ease;
+}
+
+.mm-sidebar-nav li a:hover {
+  color: #e2e8f0;
+  background: rgba(148, 163, 184, 0.06);
+}
+
+.mm-sidebar-nav li a.active {
+  color: var(--mm-sidebar-active);
+  background: var(--mm-sidebar-hover);
+  border-left-color: var(--mm-sidebar-active);
+  font-weight: 600;
+}
+
+.mm-sidebar-nav li a i {
+  font-size: 1.1rem;
+  width: 1.25rem;
+  text-align: center;
+}
+
+/* Sidebar section label */
+.mm-sidebar-section {
+  padding: 1rem 1.5rem 0.35rem;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #475569;
+  font-weight: 600;
+}
+
+/* Sidebar footer (user info + logout) */
+.mm-sidebar-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.mm-sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.mm-sidebar-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--mm-gold);
+  color: var(--mm-navy);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.mm-sidebar-user-info {
+  overflow: hidden;
+}
+
+.mm-sidebar-user-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #e2e8f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mm-sidebar-user-role {
+  font-size: 0.7rem;
+  color: var(--mm-sidebar-text);
+  text-transform: capitalize;
+}
+
+.mm-sidebar-footer .btn-logout {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem 0;
+  color: var(--mm-sidebar-text);
+  background: none;
+  border: none;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.mm-sidebar-footer .btn-logout:hover {
+  color: var(--mm-loss);
+}
+
+/* --- Sidebar Overlay (mobile) --- */
+.mm-sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1035;
+}
+
+/* --- Topbar --- */
+.mm-topbar {
+  position: fixed;
+  top: 0;
+  left: var(--mm-sidebar-width);
+  right: 0;
+  height: var(--mm-topbar-height);
+  background: var(--mm-card-bg);
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  padding: 0 1.5rem;
+  z-index: 1030;
+}
+
+.mm-topbar-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--mm-text-primary);
+  margin: 0;
+}
+
+.mm-topbar-toggle {
+  display: none;
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  color: var(--mm-text-primary);
+  cursor: pointer;
+  padding: 0.25rem;
+  margin-right: 0.75rem;
+}
+
+/* --- Content Area --- */
+.mm-content {
+  margin-left: var(--mm-sidebar-width);
+  margin-top: var(--mm-topbar-height);
+  padding: 1.5rem;
+  min-height: calc(100vh - var(--mm-topbar-height));
+  background: var(--mm-content-bg);
+}
+
+/* --- Subscription Banner (App Layout) --- */
+.mm-sub-banner {
+  margin: -1.5rem -1.5rem 1.5rem -1.5rem;
+  border-radius: 0;
+}
+
+/* ============================================
+   MARKETING LAYOUT
+   ============================================ */
+
+/* --- Marketing Nav --- */
+.mm-marketing-nav {
+  background: transparent;
+  padding: 1rem 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+}
+
+.mm-marketing-nav .navbar-brand {
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.mm-marketing-nav .brand-metal {
+  color: var(--mm-gold);
+}
+
+.mm-marketing-nav .brand-metrics {
+  color: #ffffff;
+}
+
+.mm-marketing-nav .nav-link {
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
+}
+
+.mm-marketing-nav .nav-link:hover {
+  color: #ffffff;
+}
+
+/* --- Marketing Footer --- */
+.mm-footer {
+  background: var(--mm-navy);
+  color: var(--mm-sidebar-text);
+  padding: 3rem 0 1.5rem;
+}
+
+.mm-footer .brand-metal {
+  color: var(--mm-gold);
+}
+
+.mm-footer .brand-metrics {
+  color: #ffffff;
+}
+
+.mm-footer a {
+  color: var(--mm-sidebar-text);
+  text-decoration: none;
+}
+
+.mm-footer a:hover {
+  color: #ffffff;
+}
+
+.mm-footer-bottom {
+  border-top: 1px solid rgba(148, 163, 184, 0.15);
+  padding-top: 1.5rem;
+  margin-top: 2rem;
+  font-size: 0.85rem;
+}
+
+/* ============================================
+   LANDING PAGE
+   ============================================ */
+
+/* Hero */
+.mm-hero {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: #ffffff;
+  padding: 8rem 0 5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.mm-hero::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.mm-hero h1 {
+  font-size: 3.2rem;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.mm-hero .lead {
+  font-size: 1.2rem;
+  color: rgba(255, 255, 255, 0.7);
+  max-width: 540px;
+}
+
+.mm-hero-badge {
+  display: inline-block;
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--mm-gold);
+  padding: 0.35rem 1rem;
+  border-radius: 2rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+}
+
+/* Feature cards */
+.mm-feature-card {
+  background: var(--mm-card-bg);
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  padding: 2rem;
+  height: 100%;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.mm-feature-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.06);
+}
+
+.mm-feature-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 0.5rem;
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--mm-gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  margin-bottom: 1rem;
+}
+
+/* Steps */
+.mm-step-number {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--mm-gold);
+  color: var(--mm-navy);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1.2rem;
+  margin: 0 auto 1rem;
+  flex-shrink: 0;
+}
+
+/* Pricing */
+.mm-pricing-card {
+  background: var(--mm-card-bg);
+  border: 2px solid #e2e8f0;
+  border-radius: 0.75rem;
+  padding: 2.5rem 2rem;
+  text-align: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.mm-pricing-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+}
+
+.mm-pricing-card.featured {
+  border-color: var(--mm-gold);
+  position: relative;
+}
+
+.mm-pricing-badge {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--mm-gold);
+  color: var(--mm-navy);
+  padding: 0.2rem 1rem;
+  border-radius: 2rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.mm-pricing-amount {
+  font-size: 3rem;
+  font-weight: 800;
+  color: var(--mm-text-primary);
+  line-height: 1;
+}
+
+.mm-pricing-period {
+  font-size: 1rem;
+  color: var(--mm-text-secondary);
+  font-weight: 400;
+}
+
+/* Section helpers */
+.mm-section {
+  padding: 5rem 0;
+}
+
+.mm-section-gray {
+  background: var(--mm-content-bg);
+}
+
+.mm-section-dark {
+  background: var(--mm-navy);
+  color: #ffffff;
+}
+
+.mm-section-title {
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+}
+
+.mm-section-subtitle {
+  color: var(--mm-text-secondary);
+  font-size: 1.1rem;
+  max-width: 600px;
+}
+
+/* Mock dashboard card on landing page */
+.mm-mock-dashboard {
+  background: var(--mm-navy-light);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  border: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.mm-mock-stat-label {
+  font-size: 0.75rem;
+  color: var(--mm-sidebar-text);
+  margin-bottom: 0.25rem;
+}
+
+.mm-mock-stat-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+/* Checklist on landing */
+.mm-checklist li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+}
+
+.mm-check-icon {
+  color: var(--mm-gold);
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+}
+
+/* CTA section */
+.mm-cta {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: #ffffff;
+  padding: 5rem 0;
+  text-align: center;
+}
+
+/* ============================================
+   APP COMPONENT OVERRIDES
+   ============================================ */
+
+/* Cards inside app layout */
+.mm-content .card {
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.mm-content .card .card-header.bg-dark {
+  border-bottom: 2px solid var(--mm-gold);
+}
+
+/* Dashboard KPI cards */
+.border-start.border-4 {
+  border-width: 4px !important;
+}
+
+/* Clickable card hover */
+a .card.shadow-sm { transition: transform 0.1s ease; }
+a:hover .card.shadow-sm { transform: translateY(-2px); }
+
+/* Feature card hover (landing) */
+.card.feature-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card.feature-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.15) !important;
+}
+
+/* ============================================
+   RESPONSIVE — MOBILE
+   ============================================ */
+
+@media (max-width: 991.98px) {
+  .mm-sidebar {
+    transform: translateX(-100%);
+  }
+
+  .mm-sidebar.show {
+    transform: translateX(0);
+  }
+
+  .mm-sidebar-overlay.show {
+    display: block;
+  }
+
+  .mm-topbar {
+    left: 0;
+  }
+
+  .mm-topbar-toggle {
+    display: block;
+  }
+
+  .mm-content {
+    margin-left: 0;
+  }
+
+  .mm-hero h1 {
+    font-size: 2.2rem;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .mm-hero {
+    padding: 6rem 0 3rem;
+  }
+
+  .mm-hero h1 {
+    font-size: 1.8rem;
+  }
+
+  .mm-section {
+    padding: 3rem 0;
+  }
+
+  .mm-pricing-amount {
+    font-size: 2.5rem;
+  }
+}
+
+/* ============================================
+   PRINT STYLES
+   ============================================ */
+
+@media print {
+  .mm-sidebar,
+  .mm-topbar,
+  .mm-sidebar-overlay,
+  .mm-marketing-nav,
+  .mm-footer,
+  .btn,
+  form,
+  .no-print {
+    display: none !important;
+  }
+
+  .mm-content {
+    margin-left: 0 !important;
+    margin-top: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+
+  .card {
+    border: 1px solid #dee2e6 !important;
+    box-shadow: none !important;
+  }
+
+  .bg-dark {
+    background-color: #f8f9fa !important;
+    color: #000 !important;
+  }
+
+  .bg-profit, .bg-loss {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .text-profit {
+    color: #10b981 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .text-loss {
+    color: #ef4444 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  canvas {
+    max-width: 100% !important;
+  }
+}
