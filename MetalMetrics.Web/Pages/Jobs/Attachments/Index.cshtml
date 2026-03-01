@@ -1,0 +1,107 @@
+@page "{slug}"
+@model MetalMetrics.Web.Pages.Jobs.Attachments.IndexModel
+@{
+    ViewData["Title"] = $"Attachments — {Model.Job.JobNumber}";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Attachments — @Model.Job.JobNumber</h2>
+    <a asp-page="/Jobs/Details" asp-route-slug="@Model.Job.Slug" class="btn btn-outline-secondary">Back to Job</a>
+</div>
+
+<!-- Upload Form -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-dark text-white">
+        <h5 class="mb-0">Upload File</h5>
+    </div>
+    <div class="card-body">
+        <form method="post" enctype="multipart/form-data">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label asp-for="Upload" class="form-label">File</label>
+                    <input asp-for="Upload" class="form-control" type="file" />
+                </div>
+                <div class="col-md-2">
+                    <label asp-for="Category" class="form-label">Category</label>
+                    <select asp-for="Category" class="form-select">
+                        <option value="Drawing">Drawing</option>
+                        <option value="PO">PO</option>
+                        <option value="Photo">Photo</option>
+                        <option value="Document" selected>Document</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="Description" class="form-label">Description (optional)</label>
+                    <input asp-for="Description" class="form-control" />
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-warning w-100">Upload</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Attachments List -->
+@if (Model.Attachments.Count == 0)
+{
+    <p class="text-muted text-center py-4">No attachments yet. Upload a file above.</p>
+}
+else
+{
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>File</th>
+                            <th>Category</th>
+                            <th>Size</th>
+                            <th>Uploaded By</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var a in Model.Attachments)
+                        {
+                            <tr>
+                                <td>
+                                    <a href="~/uploads/attachments/@a.StoredFileName" target="_blank">@a.FileName</a>
+                                    @if (!string.IsNullOrEmpty(a.Description))
+                                    {
+                                        <br /><small class="text-muted">@a.Description</small>
+                                    }
+                                </td>
+                                <td><span class="badge bg-secondary">@a.Category</span></td>
+                                <td>
+                                    @if (a.FileSizeBytes < 1024)
+                                    {
+                                        @($"{a.FileSizeBytes} B")
+                                    }
+                                    else if (a.FileSizeBytes < 1024 * 1024)
+                                    {
+                                        @($"{a.FileSizeBytes / 1024.0:F1} KB")
+                                    }
+                                    else
+                                    {
+                                        @($"{a.FileSizeBytes / (1024.0 * 1024.0):F1} MB")
+                                    }
+                                </td>
+                                <td>@a.UploadedByName</td>
+                                <td>@a.CreatedAt.ToString("MMM dd, yyyy")</td>
+                                <td>
+                                    <form method="post" asp-page-handler="Delete" asp-route-slug="@Model.Job.Slug" asp-route-attachmentId="@a.Id">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this attachment?')">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}

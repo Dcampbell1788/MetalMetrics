@@ -93,6 +93,13 @@
                     {
                         <a asp-page="/Jobs/TimeEntries/Index" asp-route-slug="@Model.Job.Slug" class="btn btn-sm btn-outline-primary">Time Entries</a>
                         <a asp-page="/Jobs/Notes/Index" asp-route-slug="@Model.Job.Slug" class="btn btn-sm btn-outline-primary">Notes</a>
+                        <a asp-page="/Jobs/Attachments/Index" asp-route-slug="@Model.Job.Slug" class="btn btn-sm btn-outline-primary">
+                            Attachments
+                            @if (Model.Job.Attachments.Count > 0)
+                            {
+                                <span class="badge bg-warning text-dark ms-1">@Model.Job.Attachments.Count</span>
+                            }
+                        </a>
                     }
                 </div>
             </div>

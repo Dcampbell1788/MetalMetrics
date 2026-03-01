@@ -4,7 +4,13 @@
     ViewData["Title"] = "Reports";
 }
 
-<h2 class="mb-4">Reports</h2>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Reports</h2>
+    @if (Model.Jobs.Count > 0)
+    {
+        <a asp-page="/Reports/Index" asp-page-handler="DownloadPdf" asp-route-from="@Model.From.ToString("yyyy-MM-dd")" asp-route-to="@Model.To.ToString("yyyy-MM-dd")" class="btn btn-outline-primary">Download PDF</a>
+    }
+</div>
 
 <!-- Date Range Filter -->
 <form method="get" class="row g-3 mb-4 align-items-end">

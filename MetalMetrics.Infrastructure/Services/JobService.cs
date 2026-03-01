@@ -66,6 +66,7 @@ public class JobService : IJobService
         return await _db.Jobs
             .Include(j => j.Estimate)
             .Include(j => j.Actuals)
+            .Include(j => j.Attachments)
             .FirstOrDefaultAsync(j => j.Slug == slug && j.TenantId == tenantId);
     }
 
