@@ -9,7 +9,7 @@ public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<AppDbConte
     public AppDbContext CreateDbContext(string[] args)
     {
         var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
-        optionsBuilder.UseSqlite("Data Source=metalmetrics.db");
+        optionsBuilder.UseSqlServer("Server=(localdb)\\mssqllocaldb;Database=MetalMetrics_Dev;Trusted_Connection=True;MultipleActiveResultSets=true");
 
         return new AppDbContext(optionsBuilder.Options, new StubTenantProvider());
     }
