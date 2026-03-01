@@ -34,6 +34,49 @@
     });
 })();
 
+// Sortable tables — auto-apply to any table with .mm-sortable
+(function () {
+    var tables = document.querySelectorAll('table.mm-sortable');
+    tables.forEach(function (table) {
+        var headers = table.querySelectorAll('th.sortable');
+        var sortDir = {};
+
+        headers.forEach(function (th, colIdx) {
+            th.style.cursor = 'pointer';
+            th.addEventListener('click', function () {
+                var type = th.getAttribute('data-sort');
+                var asc = sortDir[colIdx] = !sortDir[colIdx];
+                var tbody = table.querySelector('tbody');
+                var rows = Array.from(tbody.querySelectorAll('tr'));
+
+                rows.sort(function (a, b) {
+                    var aText = a.children[colIdx].textContent.trim();
+                    var bText = b.children[colIdx].textContent.trim();
+
+                    if (type === 'number') {
+                        var aVal = parseFloat(aText.replace(/[^0-9.\-]/g, '')) || 0;
+                        var bVal = parseFloat(bText.replace(/[^0-9.\-]/g, '')) || 0;
+                        return asc ? aVal - bVal : bVal - aVal;
+                    } else if (type === 'date') {
+                        var aDate = new Date(aText);
+                        var bDate = new Date(bText);
+                        return asc ? aDate - bDate : bDate - aDate;
+                    } else {
+                        return asc ? aText.localeCompare(bText) : bText.localeCompare(aText);
+                    }
+                });
+
+                rows.forEach(function (row) { tbody.appendChild(row); });
+
+                headers.forEach(function (h) {
+                    h.textContent = h.textContent.replace(/ ▲| ▼/g, '');
+                });
+                th.textContent += asc ? ' ▲' : ' ▼';
+            });
+        });
+    });
+})();
+
 // Admin/Users — role change save button
 (function () {
     var selects = document.querySelectorAll('.mm-role-select');

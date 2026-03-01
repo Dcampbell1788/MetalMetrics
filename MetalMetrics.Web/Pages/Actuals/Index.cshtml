@@ -1,0 +1,107 @@
+@page
+@model MetalMetrics.Web.Pages.Actuals.IndexModel
+@{
+    ViewData["Title"] = "Actuals";
+}
+
+<form method="post" class="row g-2 mb-3">
+    <div class="col-md-4">
+        <input asp-for="Search" class="form-control" placeholder="Search by customer or job #" />
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-outline-secondary">Filter</button>
+    </div>
+    @if (!string.IsNullOrEmpty(Model.Search))
+    {
+        <div class="col-auto">
+            <button type="submit" asp-page-handler="Clear" class="btn btn-outline-danger">Clear</button>
+        </div>
+    }
+</form>
+
+@if (Model.Jobs.Count == 0)
+{
+    <div class="text-center text-muted py-5">
+        <p class="lead">No in-progress jobs found.</p>
+    </div>
+}
+else
+{
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0 mm-sortable">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="sortable" data-sort="string" role="button">Job #</th>
+                            <th class="sortable" data-sort="string" role="button">Customer</th>
+                            <th class="sortable text-end" data-sort="number" role="button">Est. Cost</th>
+                            <th class="sortable text-end" data-sort="number" role="button">Actual Cost</th>
+                            <th class="sortable text-end" data-sort="number" role="button">Variance</th>
+                            <th class="sortable" data-sort="date" role="button">Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var job in Model.Jobs)
+                        {
+                            var estCost = job.Estimate?.TotalEstimatedCost ?? 0;
+                            var actCost = job.Actuals?.TotalActualCost ?? 0;
+                            var variance = estCost > 0 ? (actCost - estCost) / estCost * 100 : 0;
+                            var hasActuals = job.Actuals != null;
+                            <tr>
+                                <td>
+                                    <a asp-page="/Jobs/Details" asp-route-slug="@job.Slug"><strong>@job.JobNumber</strong></a>
+                                </td>
+                                <td>@job.CustomerName</td>
+                                <td class="text-end">
+                                    @if (job.Estimate != null)
+                                    {
+                                        @estCost.ToString("C0")
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td class="text-end">
+                                    @if (hasActuals)
+                                    {
+                                        @actCost.ToString("C0")
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td class="text-end">
+                                    @if (hasActuals && job.Estimate != null && estCost > 0)
+                                    {
+                                        <span class="@(variance > 10 ? "text-loss" : variance > 0 ? "text-warning" : "text-profit")">
+                                            @((variance >= 0 ? "+" : "") + variance.ToString("F0"))%
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td>@job.CreatedAt.ToString("MMM dd, yyyy")</td>
+                                <td>
+                                    @if (hasActuals)
+                                    {
+                                        <a asp-page="/Jobs/Actuals/Enter" asp-route-slug="@job.Slug" class="btn btn-sm btn-outline-primary">Update</a>
+                                    }
+                                    else
+                                    {
+                                        <a asp-page="/Jobs/Actuals/Enter" asp-route-slug="@job.Slug" class="btn btn-sm btn-outline-warning">Enter</a>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}

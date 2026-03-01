@@ -31,11 +31,15 @@ public class IndexModel : PageModel
     public List<JobSummaryDto> Jobs { get; set; } = new();
     public List<CustomerProfitabilityDto> CustomerProfitability { get; set; } = new();
     public string CustomerProfitabilityJson { get; set; } = "[]";
+    public string JobSummariesJson { get; set; } = "[]";
 
     // KPI summaries
     public int JobCount { get; set; }
     public decimal TotalRevenue { get; set; }
+    public decimal TotalCost { get; set; }
+    public decimal TotalProfit { get; set; }
     public decimal AvgMargin { get; set; }
+    public decimal ProfitPerJob { get; set; }
 
     public async Task OnGetAsync()
     {
@@ -47,10 +51,14 @@ public class IndexModel : PageModel
         Jobs = await _reportsService.GetJobSummariesAsync(From, To);
         CustomerProfitability = await _reportsService.GetCustomerProfitabilityAsync(From, To);
         CustomerProfitabilityJson = JsonSerializer.Serialize(CustomerProfitability);
+        JobSummariesJson = JsonSerializer.Serialize(Jobs);
 
         JobCount = Jobs.Count;
-        TotalRevenue = Jobs.Sum(j => j.QuotePrice);
+        TotalRevenue = Jobs.Sum(j => j.ActualRevenue);
+        TotalCost = Jobs.Sum(j => j.TotalActualCost);
+        TotalProfit = TotalRevenue - TotalCost;
         AvgMargin = Jobs.Count > 0 ? Jobs.Average(j => j.ActualMarginPercent) : 0;
+        ProfitPerJob = Jobs.Count > 0 ? TotalProfit / Jobs.Count : 0;
     }
 
     public async Task<IActionResult> OnGetDownloadPdfAsync()

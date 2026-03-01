@@ -49,7 +49,8 @@ public class ReportsService : IReportsService
                 CompletedAt = j.CompletedAt!.Value,
                 IsProfitable = j.Actuals.ActualRevenue > j.Actuals.TotalActualCost,
                 QuotePrice = j.Estimate.QuotePrice,
-                Status = j.Status.ToString()
+                Status = j.Status.ToString(),
+                ActualRevenue = j.Actuals.ActualRevenue
             };
         }).ToList();
     }

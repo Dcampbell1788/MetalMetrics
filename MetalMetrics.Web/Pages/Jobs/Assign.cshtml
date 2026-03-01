@@ -11,7 +11,7 @@
 <div class="row">
     <div class="col-md-7">
         <div class="card shadow-sm mb-3">
-            <div class="card-header bg-dark text-white">
+            <div class="card-header bg-light">
                 <h5 class="mb-0">Current Assignments</h5>
             </div>
             <div class="card-body">
@@ -21,12 +21,12 @@
                 }
                 else
                 {
-                    <table class="table table-hover mb-0">
+                    <table class="table table-sm table-hover mb-0 mm-sortable">
                         <thead class="table-light">
                             <tr>
-                                <th>Name</th>
-                                <th>Role</th>
-                                <th>Assigned</th>
+                                <th class="sortable" data-sort="string" role="button">Name</th>
+                                <th class="sortable" data-sort="string" role="button">Role</th>
+                                <th class="sortable" data-sort="date" role="button">Assigned</th>
                                 <th></th>
                             </tr>
                         </thead>
@@ -56,7 +56,7 @@
 
     <div class="col-md-5">
         <div class="card shadow-sm mb-3">
-            <div class="card-header bg-dark text-white">
+            <div class="card-header bg-light">
                 <h5 class="mb-0">Add Team Member</h5>
             </div>
             <div class="card-body">

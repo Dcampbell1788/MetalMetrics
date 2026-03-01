@@ -1,0 +1,99 @@
+@page
+@model MetalMetrics.Web.Pages.Quotes.IndexModel
+@{
+    ViewData["Title"] = "Quotes";
+}
+
+<div class="d-flex justify-content-end mb-3">
+    @if (User.IsInRole("Admin") || User.IsInRole("Owner") || User.IsInRole("ProjectManager"))
+    {
+        <a asp-page="/Jobs/Create" class="btn btn-warning">
+            <i class="bi bi-plus-lg me-1"></i>New Job
+        </a>
+    }
+</div>
+
+<form method="post" class="row g-2 mb-3">
+    <div class="col-md-4">
+        <input asp-for="Search" class="form-control" placeholder="Search by customer or job #" />
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-outline-secondary">Filter</button>
+    </div>
+    @if (!string.IsNullOrEmpty(Model.Search))
+    {
+        <div class="col-auto">
+            <button type="submit" asp-page-handler="Clear" class="btn btn-outline-danger">Clear</button>
+        </div>
+    }
+</form>
+
+@if (Model.Quotes.Count == 0)
+{
+    <div class="text-center text-muted py-5">
+        <p class="lead">No quotes found.</p>
+    </div>
+}
+else
+{
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0 mm-sortable">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="sortable" data-sort="string" role="button">Job #</th>
+                            <th class="sortable" data-sort="string" role="button">Customer</th>
+                            <th class="sortable text-end" data-sort="number" role="button">Quote Price</th>
+                            <th class="sortable text-end" data-sort="number" role="button">Est. Cost</th>
+                            <th class="sortable" data-sort="date" role="button">Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var q in Model.Quotes)
+                        {
+                            <tr>
+                                <td>
+                                    <a asp-page="/Jobs/Details" asp-route-slug="@q.Slug"><strong>@q.JobNumber</strong></a>
+                                </td>
+                                <td>@q.CustomerName</td>
+                                <td class="text-end">
+                                    @if (q.Estimate != null)
+                                    {
+                                        @q.Estimate.QuotePrice.ToString("C0")
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td class="text-end">
+                                    @if (q.Estimate != null)
+                                    {
+                                        @q.Estimate.TotalEstimatedCost.ToString("C0")
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td>@q.CreatedAt.ToString("MMM dd, yyyy")</td>
+                                <td>
+                                    @if (q.Estimate != null)
+                                    {
+                                        <a asp-page="/Jobs/Quote/View" asp-route-slug="@q.Slug" class="btn btn-sm btn-outline-primary">View Quote</a>
+                                    }
+                                    else
+                                    {
+                                        <a asp-page="/Jobs/Quote/Create" asp-route-slug="@q.Slug" class="btn btn-sm btn-outline-warning">Create Quote</a>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}

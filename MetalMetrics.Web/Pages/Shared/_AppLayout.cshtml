@@ -47,8 +47,8 @@
             @if (User.IsInRole("Admin") || User.IsInRole("Owner") || User.IsInRole("ProjectManager") || User.IsInRole("Estimator"))
             {
                 <li>
-                    <a asp-page="/Jobs/Index" asp-route-StatusFilter="Quoted"
-                       class="@(ViewContext.HttpContext.Request.Query["StatusFilter"].ToString() == "Quoted" ? "active" : "")">
+                    <a asp-page="/Quotes/Index"
+                       class="@(currentPage.StartsWith("/Quotes") ? "active" : "")">
                         <i class="bi bi-calculator"></i> Quotes
                     </a>
                 </li>
@@ -57,8 +57,8 @@
             @if (User.IsInRole("Admin") || User.IsInRole("Owner") || User.IsInRole("ProjectManager") || User.IsInRole("Foreman"))
             {
                 <li>
-                    <a asp-page="/Jobs/Index" asp-route-StatusFilter="InProgress"
-                       class="@(ViewContext.HttpContext.Request.Query["StatusFilter"].ToString() == "InProgress" ? "active" : "")">
+                    <a asp-page="/Actuals/Index"
+                       class="@(currentPage.StartsWith("/Actuals") ? "active" : "")">
                         <i class="bi bi-clipboard-data"></i> Actuals
                     </a>
                 </li>
