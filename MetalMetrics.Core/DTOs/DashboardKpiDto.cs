@@ -12,4 +12,6 @@ public class DashboardKpiDto
     public int InProgressCount { get; set; }
     public int QuotedCount { get; set; }
     public decimal InProgressEstimatedValue { get; set; }
+    public decimal ProfitThisMonth { get; set; }
+    public decimal QuotedEstimatedValue { get; set; }
 }

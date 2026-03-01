@@ -4,15 +4,20 @@
     ViewData["Title"] = "Dashboard";
 }
 
-<h2 class="mb-4">Dashboard</h2>
+<div class="d-flex justify-content-end mb-3">
+    <a asp-page="/Reports/Index" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-bar-chart-line me-1"></i> Full Reports
+    </a>
+</div>
 
-<!-- 6a. At-Risk Alert Banner -->
+<!-- At-Risk Alert Banner -->
 @if (Model.AtRiskJobs.Count > 0)
 {
-    <div class="mb-4">
+    <div class="mb-4" id="atRiskAlerts">
         @foreach (var risk in Model.AtRiskJobs)
         {
             <div class="alert alert-danger d-flex align-items-center py-2 mb-2">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
                 <strong class="me-2">At Risk:</strong>
                 <span>@risk.JobNumber — @risk.CustomerName is @risk.OveragePercent.ToString("F0")% over budget</span>
                 <a href="/Jobs/Actuals/Enter/@risk.Slug" class="btn btn-sm btn-outline-danger ms-auto">Review Actuals</a>
@@ -21,81 +26,91 @@
     </div>
 }
 
-<!-- 6b. KPI Cards — 5 cards -->
+<!-- KPI Cards — 5 cards -->
+@{
+    var pipelineValue = Model.Kpis.InProgressEstimatedValue + Model.Kpis.QuotedEstimatedValue;
+}
 <div class="row row-cols-1 row-cols-md-3 row-cols-lg-5 g-3 mb-4">
     <div class="col">
-        <div class="card shadow-sm border-start border-4 border-primary h-100">
-            <div class="card-body">
-                <div class="text-muted small">Total Jobs</div>
-                <h3 class="mb-0">@Model.Kpis.TotalJobs</h3>
-                <small class="text-muted">@Model.Kpis.JobsThisMonth this month</small>
+        <a href="/Jobs?statusFilter=InProgress" class="text-decoration-none">
+            <div class="card shadow-sm border-start border-4 border-primary h-100">
+                <div class="card-body">
+                    <div class="text-muted small"><i class="bi bi-briefcase me-1"></i>Active Jobs</div>
+                    <h3 class="mb-0 text-body">@Model.Kpis.InProgressCount</h3>
+                    <small class="text-muted">in progress</small>
+                </div>
             </div>
-        </div>
+        </a>
     </div>
     <div class="col">
         <div class="card shadow-sm border-start border-4 @(Model.Kpis.AverageMarginPercent >= Model.Kpis.TargetMarginPercent ? "border-success" : "border-warning") h-100">
             <div class="card-body">
-                <div class="text-muted small">Avg Margin</div>
+                <div class="text-muted small"><i class="bi bi-percent me-1"></i>Avg Margin</div>
                 <h3 class="mb-0 @(Model.Kpis.AverageMarginPercent >= 0 ? "text-profit" : "text-loss")">@Model.Kpis.AverageMarginPercent.ToString("F1")%</h3>
                 <small class="text-muted">Target: @Model.Kpis.TargetMarginPercent.ToString("F0")%</small>
             </div>
         </div>
     </div>
     <div class="col">
-        <a href="/Jobs?special=BelowTarget" class="text-decoration-none">
-            <div class="card shadow-sm border-start border-4 @(Model.Kpis.JobsOverBudget > 0 ? "border-danger" : "border-success") h-100">
+        <a href="#atRiskAlerts" class="text-decoration-none">
+            <div class="card shadow-sm border-start border-4 @(Model.AtRiskJobs.Count > 0 ? "border-danger" : "border-success") h-100">
                 <div class="card-body">
-                    <div class="text-muted small">Below Target Margin</div>
-                    <h3 class="mb-0 text-body">@Model.Kpis.JobsOverBudget</h3>
-                    <small class="text-muted">jobs below @Model.Kpis.TargetMarginPercent.ToString("F0")%</small>
+                    <div class="text-muted small"><i class="bi bi-exclamation-triangle me-1"></i>Jobs at Risk</div>
+                    <h3 class="mb-0 text-body">@Model.AtRiskJobs.Count</h3>
+                    <small class="text-muted">over budget by 10%+</small>
                 </div>
             </div>
         </a>
     </div>
     <div class="col">
-        <div class="card shadow-sm border-start border-4 border-info h-100">
+        <div class="card shadow-sm border-start border-4 @(Model.Kpis.ProfitThisMonth >= 0 ? "border-success" : "border-danger") h-100">
             <div class="card-body">
-                <div class="text-muted small">Revenue (Month)</div>
-                <h3 class="mb-0">@Model.Kpis.RevenueThisMonth.ToString("C0")</h3>
-                <small class="text-muted">completed this month</small>
+                <div class="text-muted small"><i class="bi bi-cash-stack me-1"></i>Profit This Month</div>
+                <h3 class="mb-0 @(Model.Kpis.ProfitThisMonth >= 0 ? "text-profit" : "text-loss")">@((Model.Kpis.ProfitThisMonth >= 0 ? "+" : "") + Model.Kpis.ProfitThisMonth.ToString("C0"))</h3>
+                <small class="text-muted">completed jobs</small>
             </div>
         </div>
     </div>
     <div class="col">
-        <div class="card shadow-sm border-start border-4 border-success h-100">
+        <div class="card shadow-sm border-start border-4 border-info h-100">
             <div class="card-body">
-                <div class="text-muted small">Total Revenue</div>
-                <h3 class="mb-0">@Model.Kpis.TotalRevenue.ToString("C0")</h3>
-                <small class="text-muted">all-time</small>
+                <div class="text-muted small"><i class="bi bi-funnel me-1"></i>Pipeline Value</div>
+                <h3 class="mb-0">@pipelineValue.ToString("C0")</h3>
+                <small class="text-muted">quoted + in progress</small>
             </div>
         </div>
     </div>
 </div>
 
-<!-- 6c. Work Pipeline Section -->
+<!-- Work Pipeline Section -->
 <div class="row mb-4">
     <div class="col-12">
         <div class="card shadow-sm">
-            <div class="card-header bg-dark text-white">
-                <h5 class="mb-0">Work Pipeline</h5>
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="bi bi-kanban me-1"></i>Work Pipeline</h5>
             </div>
             <div class="card-body">
                 <div class="row text-center">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <a href="/Jobs?statusFilter=Quoted" class="text-decoration-none">
                             <div class="text-muted small">Quoted</div>
                             <h3 class="mb-0 text-body">@Model.Kpis.QuotedCount</h3>
                             <small class="text-muted">awaiting approval</small>
                         </a>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
+                        <div class="text-muted small">Quoted Value</div>
+                        <h3 class="mb-0">@Model.Kpis.QuotedEstimatedValue.ToString("C0")</h3>
+                        <small class="text-muted">estimated revenue</small>
+                    </div>
+                    <div class="col-md-3">
                         <a href="/Jobs?statusFilter=InProgress" class="text-decoration-none">
                             <div class="text-muted small">In Progress</div>
                             <h3 class="mb-0 text-body">@Model.Kpis.InProgressCount</h3>
                             <small class="text-muted">active jobs</small>
                         </a>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <div class="text-muted small">In-Progress Value</div>
                         <h3 class="mb-0">@Model.Kpis.InProgressEstimatedValue.ToString("C0")</h3>
                         <small class="text-muted">estimated revenue</small>
@@ -115,12 +130,12 @@
 }
 else
 {
-    <!-- 6d. Estimated vs Actual Cost — full width -->
+    <!-- Estimated vs Actual Cost — full width -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="card shadow-sm">
-                <div class="card-header bg-dark text-white">
-                    <h5 class="mb-0">Estimated vs Actual Cost by Job</h5>
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="bi bi-bar-chart me-1"></i>Estimated vs Actual Cost by Job</h5>
                 </div>
                 <div class="card-body">
                     <canvas id="profitChart" height="150"></canvas>
@@ -129,89 +144,95 @@ else
         </div>
     </div>
 
-    <!-- 6e. Margin Trend — full width -->
+    <!-- Margin Trend — full width -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="card shadow-sm">
-                <div class="card-header bg-dark text-white">
-                    <h5 class="mb-0">Margin Trend Over Time</h5>
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="bi bi-graph-up me-1"></i>Margin Trend Over Time</h5>
                 </div>
                 <div class="card-body">
-                    <canvas id="marginTrend" height="150"></canvas>
+                    <canvas id="marginTrend" height="80"></canvas>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 6f. Estimating Accuracy + 6g. Customer Profitability — 50% each -->
+    <!-- Estimating Accuracy + Customer Profitability — 50% each -->
     <div class="row mb-4">
         <div class="col-md-6">
             <div class="card shadow-sm h-100">
-                <div class="card-header bg-dark text-white">
-                    <h5 class="mb-0">Estimating Accuracy</h5>
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="bi bi-bullseye me-1"></i>Estimating Accuracy</h5>
                 </div>
-                <div class="card-body">
-                    @{
-                        var worstCategory = Model.CategoryVariances.Count > 0
-                            ? Model.CategoryVariances.OrderByDescending(c => Math.Abs(c.AverageVariancePercent)).First()
-                            : null;
-                    }
-                    @if (Model.CategoryVariances.Count > 0)
-                    {
-                        <table class="table table-sm mb-0">
-                            <thead>
-                                <tr>
-                                    <th>Category</th>
-                                    <th class="text-end">Avg Variance</th>
-                                    <th class="text-end">Avg $ Impact</th>
-                                    <th class="text-center">Direction</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var cv in Model.CategoryVariances)
-                                {
-                                    var varClass = cv.AverageVariancePercent > 5 ? "text-loss" : (cv.AverageVariancePercent < -5 ? "text-profit" : "");
+                @{
+                    var worstCategory = Model.CategoryVariances.Count > 0
+                        ? Model.CategoryVariances.OrderByDescending(c => Math.Abs(c.AverageVariancePercent)).First()
+                        : null;
+                }
+                @if (Model.CategoryVariances.Count > 0)
+                {
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-sm mb-0">
+                                <thead>
                                     <tr>
-                                        <td>@cv.Category</td>
-                                        <td class="text-end @varClass">@((cv.AverageVariancePercent >= 0 ? "+" : "") + cv.AverageVariancePercent.ToString("F1"))%</td>
-                                        <td class="text-end @varClass">@((cv.AverageDollarVariance >= 0 ? "+" : "") + cv.AverageDollarVariance.ToString("C0"))</td>
-                                        <td class="text-center">
-                                            @if (cv.Direction == "Underestimate")
-                                            {
-                                                <span class="text-loss" title="Underestimate (risk)">&#9650;</span>
-                                            }
-                                            else
-                                            {
-                                                <span class="text-profit" title="Overestimate (safe)">&#9660;</span>
-                                            }
-                                        </td>
+                                        <th class="ps-3">Category</th>
+                                        <th class="text-end">Avg Variance</th>
+                                        <th class="text-end">Avg $ Impact</th>
+                                        <th class="text-center pe-3">Direction</th>
                                     </tr>
-                                }
-                            </tbody>
-                        </table>
-                        if (worstCategory != null && Math.Abs(worstCategory.AverageVariancePercent) > 10)
-                        {
-                            <div class="alert alert-info py-2 mt-2 mb-0 small">
+                                </thead>
+                                <tbody>
+                                    @foreach (var cv in Model.CategoryVariances)
+                                    {
+                                        var varClass = cv.AverageVariancePercent > 5 ? "text-loss" : (cv.AverageVariancePercent < -5 ? "text-profit" : "");
+                                        <tr>
+                                            <td class="ps-3">@cv.Category</td>
+                                            <td class="text-end @varClass">@((cv.AverageVariancePercent >= 0 ? "+" : "") + cv.AverageVariancePercent.ToString("F1"))%</td>
+                                            <td class="text-end @varClass">@((cv.AverageDollarVariance >= 0 ? "+" : "") + cv.AverageDollarVariance.ToString("C0"))</td>
+                                            <td class="text-center pe-3">
+                                                @if (cv.Direction == "Underestimate")
+                                                {
+                                                    <span class="text-loss" title="Underestimate (risk)">&#9650;</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-profit" title="Overestimate (safe)">&#9660;</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    if (worstCategory != null && Math.Abs(worstCategory.AverageVariancePercent) > 10)
+                    {
+                        <div class="card-footer">
+                            <div class="alert alert-info py-2 mb-0 small">
                                 You tend to @worstCategory.Direction.ToLower() <strong>@worstCategory.Category</strong> by ~@Math.Abs(worstCategory.AverageVariancePercent).ToString("F0")%.
                             </div>
-                        }
+                        </div>
                     }
-                    else
-                    {
+                }
+                else
+                {
+                    <div class="card-body">
                         <p class="text-muted mb-0">Not enough data yet.</p>
-                    }
-                </div>
+                    </div>
+                }
             </div>
         </div>
         <div class="col-md-6">
             <div class="card shadow-sm h-100">
-                <div class="card-header bg-dark text-white d-flex align-items-center justify-content-between">
-                    <h5 class="mb-0">Customer Profitability</h5>
+                <div class="card-header bg-light d-flex align-items-center justify-content-between">
+                    <h5 class="mb-0"><i class="bi bi-people me-1"></i>Customer Profitability</h5>
                     @if (Model.CustomerProfitability.Count > 0)
                     {
                         <div class="btn-group btn-group-sm">
-                            <button type="button" class="btn btn-outline-light active" onclick="sortCustomerTable('margin')" id="btnSortMargin">Margin %</button>
-                            <button type="button" class="btn btn-outline-light" onclick="sortCustomerTable('pl')" id="btnSortPL">P/L</button>
+                            <button type="button" class="btn btn-outline-secondary active" onclick="sortCustomerTable('margin')" id="btnSortMargin">Margin %</button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="sortCustomerTable('pl')" id="btnSortPL">P/L</button>
                         </div>
                     }
                 </div>
@@ -270,7 +291,7 @@ else
             var jobs = @Html.Raw(Model.JobSummariesJson);
             var targetMargin = @Model.Kpis.TargetMarginPercent;
 
-            // 6d — Estimated vs Actual Cost (sorted chronologically)
+            // Estimated vs Actual Cost (sorted chronologically)
             var chronoJobs = jobs.slice().sort(function(a, b) {
                 return new Date(a.CompletedAt) - new Date(b.CompletedAt);
             });
@@ -323,7 +344,7 @@ else
                 }
             });
 
-            // 6e — Margin Trend with target line
+            // Margin Trend with target line
             var sortedJobs = jobs.slice().sort(function(a, b) {
                 return new Date(a.CompletedAt) - new Date(b.CompletedAt);
             });
@@ -390,7 +411,7 @@ else
                 }
             });
 
-            // 6g — Customer table sort
+            // Customer table sort
             function sortCustomerTable(mode) {
                 var table = document.getElementById('customerTable');
                 var tbody = table.querySelector('tbody');

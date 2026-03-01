@@ -44,6 +44,7 @@ public class DashboardService : IDashboardService
         decimal avgMargin = 0;
         int overBudget = 0;
         decimal revenueThisMonth = 0;
+        decimal costThisMonth = 0;
 
         foreach (var job in completedWithActuals)
         {
@@ -57,7 +58,10 @@ public class DashboardService : IDashboardService
                 overBudget++;
 
             if (job.CompletedAt.HasValue && job.CompletedAt.Value >= monthStart)
+            {
                 revenueThisMonth += job.Actuals!.ActualRevenue;
+                costThisMonth += job.Actuals!.TotalActualCost;
+            }
         }
 
         if (completedWithActuals.Count > 0)
@@ -79,6 +83,12 @@ public class DashboardService : IDashboardService
             .ToListAsync();
         var inProgressEstimatedValue = inProgressWithEstimates.Sum(j => j.Estimate!.QuotePrice);
 
+        var quotedWithEstimates = await _db.Jobs
+            .Include(j => j.Estimate)
+            .Where(j => j.TenantId == tenantId && j.Status == JobStatus.Quoted && j.Estimate != null)
+            .ToListAsync();
+        var quotedEstimatedValue = quotedWithEstimates.Sum(j => j.Estimate!.QuotePrice);
+
         return new DashboardKpiDto
         {
             TotalJobs = allJobs,
@@ -90,7 +100,9 @@ public class DashboardService : IDashboardService
             TotalRevenue = totalRevenue,
             InProgressCount = inProgressCount,
             QuotedCount = quotedCount,
-            InProgressEstimatedValue = inProgressEstimatedValue
+            InProgressEstimatedValue = inProgressEstimatedValue,
+            ProfitThisMonth = revenueThisMonth - costThisMonth,
+            QuotedEstimatedValue = quotedEstimatedValue
         };
     }
 
