@@ -18,7 +18,7 @@ public class PlatformService : IPlatformService
 
     public async Task<PlatformDashboardDto> GetPlatformDashboardAsync()
     {
-        var tenants = await _db.Tenants.Where(t => t.TenantId != Guid.Empty).ToListAsync();
+        var tenants = await _db.Tenants.Where(t => t.Id != DbSeeder.PlatformTenantId).ToListAsync();
         var plans = await _db.PlatformPlans.Where(p => p.IsActive).ToListAsync();
 
         var monthlyPrice = plans.FirstOrDefault(p => p.Interval == PlanInterval.Monthly)?.Price ?? 0;
@@ -37,7 +37,7 @@ public class PlatformService : IPlatformService
             PastDueTenants = tenants.Count(t => t.SubscriptionStatus == SubscriptionStatus.PastDue),
             CancelledTenants = tenants.Count(t => t.SubscriptionStatus == SubscriptionStatus.Cancelled),
             MRR = mrr,
-            TotalUsers = await _db.Users.CountAsync(u => u.TenantId != Guid.Empty),
+            TotalUsers = await _db.Users.CountAsync(u => u.TenantId != DbSeeder.PlatformTenantId),
             TotalJobs = await _db.Jobs.CountAsync()
         };
     }
@@ -45,7 +45,7 @@ public class PlatformService : IPlatformService
     public async Task<List<TenantSummaryDto>> GetAllTenantsAsync()
     {
         return await _db.Tenants
-            .Where(t => t.TenantId != Guid.Empty)
+            .Where(t => t.Id != DbSeeder.PlatformTenantId)
             .Select(t => new TenantSummaryDto
             {
                 TenantId = t.Id,

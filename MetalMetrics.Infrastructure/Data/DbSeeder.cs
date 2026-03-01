@@ -7,6 +7,10 @@ namespace MetalMetrics.Infrastructure.Data;
 
 public class DbSeeder
 {
+    // Well-known sentinel ID for the platform tenant (SuperAdmin's tenant).
+    // Cannot use Guid.Empty because EF treats it as "not set" and generates a new value.
+    public static readonly Guid PlatformTenantId = new("00000000-0000-0000-0000-000000000001");
+
     private readonly AppDbContext _db;
     private readonly UserManager<AppUser> _userManager;
     private readonly string? _webRootPath;
@@ -70,19 +74,35 @@ public class DbSeeder
     {
         if (await _db.Users.AnyAsync(u => u.Role == AppRole.SuperAdmin)) return;
 
+        // Ensure the platform sentinel tenant exists for the SuperAdmin
+        if (!await _db.Tenants.AnyAsync(t => t.Id == PlatformTenantId))
+        {
+            var platformTenant = new Tenant
+            {
+                Id = PlatformTenantId,
+                CompanyName = "Platform",
+                SubscriptionStatus = Core.Enums.SubscriptionStatus.Active,
+                IsEnabled = true,
+                TrialEndsAt = DateTime.MaxValue
+            };
+            platformTenant.TenantId = platformTenant.Id;
+            _db.Tenants.Add(platformTenant);
+            await _db.SaveChangesAsync();
+        }
+
         var superAdmin = new AppUser
         {
             UserName = "admin@metalmetrics.io",
             Email = "admin@metalmetrics.io",
             FullName = "Platform Admin",
-            TenantId = Guid.Empty,
+            TenantId = PlatformTenantId,
             Role = AppRole.SuperAdmin,
             EmailConfirmed = true
         };
         await _userManager.CreateAsync(superAdmin, "SuperAdmin123!");
         await _userManager.AddToRoleAsync(superAdmin, AppRole.SuperAdmin.ToString());
         await _userManager.AddClaimAsync(superAdmin,
-            new System.Security.Claims.Claim("TenantId", Guid.Empty.ToString()));
+            new System.Security.Claims.Claim("TenantId", PlatformTenantId.ToString()));
         await _userManager.AddClaimAsync(superAdmin,
             new System.Security.Claims.Claim("FullName", superAdmin.FullName));
 
