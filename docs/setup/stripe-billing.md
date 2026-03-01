@@ -28,18 +28,35 @@ Go to [stripe.com](https://stripe.com) and sign up. You'll land on the dashboard
 
 ### 3. Create a product with two prices
 
-1. Go to **Products → Add Product**
-2. Name: `MetalMetrics Pro` (or any name)
-3. Add two **Recurring** prices:
-   - **Monthly**: $99.00 / month → after creating, copy the Price ID (`price_...`)
-   - **Annual**: $990.00 / year → after creating, copy the Price ID (`price_...`)
+1. Go to **Products → + Add Product**
+2. Fill in the product details:
+   - **Name:** `MetalMetrics Pro`
+   - **Description:** `Full-featured job profitability tracking for sheetmetal fabrication shops. Includes AI-powered quoting, real-time dashboards, PDF reporting, multi-role team management, and detailed cost variance analysis.`
+   - **Image:** optional (company logo if available)
+3. Add the **Monthly** price:
+   - Click **+ Add another price**
+   - **Pricing model:** Standard pricing
+   - **Price:** `$99.00`
+   - **Billing period:** Monthly, Recurring
+   - **Price description:** `Monthly — full access, billed monthly`
+   - Save → copy the **Price ID** (`price_...`)
+4. Add the **Annual** price:
+   - Click **+ Add another price**
+   - **Pricing model:** Standard pricing
+   - **Price:** `$990.00`
+   - **Billing period:** Yearly, Recurring
+   - **Price description:** `Annual — full access, save 17% vs monthly`
+   - Save → copy the **Price ID** (`price_...`)
 
 ### 4. Enable the Customer Portal
 
 1. Go to **Settings → Billing → Customer Portal**
-2. Enable the portal
-3. Configure allowed actions (cancel subscription, switch plans, update payment method)
-4. Save
+2. Toggle the portal **on**
+3. Enable these actions:
+   - **Cancel subscription** — allow customers to cancel
+   - **Switch plans** — add both the Monthly and Annual prices so customers can upgrade/downgrade
+   - **Update payment method** — allow card changes
+4. Click **Save**
 
 ### 5. Set up webhooks
 
@@ -69,8 +86,8 @@ scoop install stripe
 # Login
 stripe login
 
-# Forward webhooks to your local app
-stripe listen --forward-to https://localhost:7001/api/stripe/webhook
+# Forward webhooks to your local app (use your HTTPS port from launchSettings.json)
+stripe listen --forward-to https://localhost:7161/api/stripe/webhook
 ```
 
 The CLI prints a webhook signing secret (`whsec_...`) — use that as your `Stripe:WebhookSecret`.
