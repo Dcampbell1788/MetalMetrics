@@ -54,6 +54,8 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("CanAssignJobs", p => p.RequireRole("Admin", "Owner", "ProjectManager", "Foreman"));
 });
 
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession();
 builder.Services.AddRazorPages();
 
 var app = builder.Build();
@@ -71,6 +73,7 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
+app.UseSession();
 
 app.UseAuthentication();
 app.UseAuthorization();

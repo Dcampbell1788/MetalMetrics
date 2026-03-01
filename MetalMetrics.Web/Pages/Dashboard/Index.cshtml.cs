@@ -20,6 +20,7 @@ public class IndexModel : PageModel
     public List<JobSummaryDto> JobSummaries { get; set; } = new();
     public List<CustomerProfitabilityDto> CustomerProfitability { get; set; } = new();
     public List<CategoryVarianceDto> CategoryVariances { get; set; } = new();
+    public List<AtRiskJobDto> AtRiskJobs { get; set; } = new();
     public string JobSummariesJson { get; set; } = "[]";
     public string CustomerProfitabilityJson { get; set; } = "[]";
     public string CategoryVariancesJson { get; set; } = "[]";
@@ -30,6 +31,7 @@ public class IndexModel : PageModel
         JobSummaries = await _dashboardService.GetJobSummariesAsync();
         CustomerProfitability = await _dashboardService.GetCustomerProfitabilityAsync();
         CategoryVariances = await _dashboardService.GetCategoryVariancesAsync();
+        AtRiskJobs = await _dashboardService.GetAtRiskJobsAsync();
 
         JobSummariesJson = JsonSerializer.Serialize(JobSummaries);
         CustomerProfitabilityJson = JsonSerializer.Serialize(CustomerProfitability);

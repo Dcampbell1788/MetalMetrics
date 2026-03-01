@@ -67,15 +67,15 @@ public class EnterModel : PageModel
         public string? Notes { get; set; }
     }
 
-    public async Task<IActionResult> OnGetAsync(Guid jobId)
+    public async Task<IActionResult> OnGetAsync(string slug)
     {
-        var job = await _jobService.GetByIdAsync(jobId);
+        var job = await _jobService.GetBySlugAsync(slug);
         if (job == null) return NotFound();
 
         Job = job;
         Estimate = job.Estimate;
 
-        var existing = await _actualsService.GetByJobIdAsync(jobId);
+        var existing = await _actualsService.GetByJobIdAsync(job.Id);
         if (existing != null)
         {
             Input = new InputModel
@@ -104,9 +104,9 @@ public class EnterModel : PageModel
         return Page();
     }
 
-    public async Task<IActionResult> OnPostAsync(Guid jobId)
+    public async Task<IActionResult> OnPostAsync(string slug)
     {
-        var job = await _jobService.GetByIdAsync(jobId);
+        var job = await _jobService.GetBySlugAsync(slug);
         if (job == null) return NotFound();
 
         Job = job;
@@ -119,7 +119,7 @@ public class EnterModel : PageModel
 
         var actuals = new JobActuals
         {
-            JobId = jobId,
+            JobId = job.Id,
             ActualLaborHours = Input.ActualLaborHours,
             LaborRate = Input.LaborRate,
             ActualMaterialCost = Input.ActualMaterialCost,
@@ -134,6 +134,6 @@ public class EnterModel : PageModel
         await _actualsService.SaveAsync(actuals);
 
         TempData["Success"] = $"Actuals saved for {job.JobNumber}.";
-        return RedirectToPage("/Jobs/Details", new { id = jobId });
+        return RedirectToPage("/Jobs/Details", new { slug = job.Slug });
     }
 }

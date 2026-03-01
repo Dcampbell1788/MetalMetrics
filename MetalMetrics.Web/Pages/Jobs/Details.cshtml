@@ -1,4 +1,4 @@
-@page "{id:guid}"
+@page "{slug}"
 @model MetalMetrics.Web.Pages.Jobs.DetailsModel
 @{
     ViewData["Title"] = $"Job {Model.Job.JobNumber}";
@@ -10,7 +10,7 @@
     <div>
         @if (User.IsInRole("Admin") || User.IsInRole("Owner") || User.IsInRole("ProjectManager") || User.IsInRole("Foreman"))
         {
-            <a asp-page="Edit" asp-route-id="@Model.Job.Id" class="btn btn-outline-secondary">Edit</a>
+            <a asp-page="Edit" asp-route-slug="@Model.Job.Slug" class="btn btn-outline-secondary">Edit</a>
         }
         <a asp-page="Index" class="btn btn-outline-secondary">Back to Jobs</a>
     </div>
@@ -64,19 +64,19 @@
                     <div class="d-flex gap-2 flex-wrap">
                         @if (Model.Job.Status == MetalMetrics.Core.Enums.JobStatus.Quoted)
                         {
-                            <form method="post" asp-page-handler="Start" asp-route-id="@Model.Job.Id">
+                            <form method="post" asp-page-handler="Start" asp-route-slug="@Model.Job.Slug">
                                 <button type="submit" class="btn btn-primary btn-sm">Start Job</button>
                             </form>
                         }
                         @if (Model.Job.Status == MetalMetrics.Core.Enums.JobStatus.InProgress)
                         {
-                            <form method="post" asp-page-handler="Complete" asp-route-id="@Model.Job.Id">
+                            <form method="post" asp-page-handler="Complete" asp-route-slug="@Model.Job.Slug">
                                 <button type="submit" class="btn btn-success btn-sm">Mark as Completed</button>
                             </form>
                         }
                         @if (Model.Job.Status == MetalMetrics.Core.Enums.JobStatus.Completed)
                         {
-                            <form method="post" asp-page-handler="Invoice" asp-route-id="@Model.Job.Id">
+                            <form method="post" asp-page-handler="Invoice" asp-route-slug="@Model.Job.Slug">
                                 <button type="submit" class="btn btn-secondary btn-sm">Mark as Invoiced</button>
                             </form>
                         }
@@ -87,12 +87,12 @@
                 <div class="d-flex gap-2 flex-wrap">
                     @if (User.IsInRole("Admin") || User.IsInRole("Owner") || User.IsInRole("ProjectManager") || User.IsInRole("Foreman"))
                     {
-                        <a asp-page="Assign" asp-route-id="@Model.Job.Id" class="btn btn-sm btn-outline-warning">Assign Team</a>
+                        <a asp-page="Assign" asp-route-slug="@Model.Job.Slug" class="btn btn-sm btn-outline-warning">Assign Team</a>
                     }
                     @if (User.IsInRole("Admin") || User.IsInRole("Owner") || User.IsInRole("ProjectManager") || Model.IsAssigned)
                     {
-                        <a asp-page="/Jobs/TimeEntries/Index" asp-route-jobId="@Model.Job.Id" class="btn btn-sm btn-outline-primary">Time Entries</a>
-                        <a asp-page="/Jobs/Notes/Index" asp-route-jobId="@Model.Job.Id" class="btn btn-sm btn-outline-primary">Notes</a>
+                        <a asp-page="/Jobs/TimeEntries/Index" asp-route-slug="@Model.Job.Slug" class="btn btn-sm btn-outline-primary">Time Entries</a>
+                        <a asp-page="/Jobs/Notes/Index" asp-route-slug="@Model.Job.Slug" class="btn btn-sm btn-outline-primary">Notes</a>
                     }
                 </div>
             </div>
@@ -123,15 +123,15 @@
                                 </span>
                             </dd>
                         </dl>
-                        <a asp-page="/Jobs/Quote/View" asp-route-jobId="@Model.Job.Id" class="btn btn-sm btn-outline-primary mt-2">View Full Quote</a>
+                        <a asp-page="/Jobs/Quote/View" asp-route-slug="@Model.Job.Slug" class="btn btn-sm btn-outline-primary mt-2">View Full Quote</a>
                     }
                     else
                     {
                         <p class="text-muted mb-2">No quote created yet.</p>
                         @if (User.IsInRole("Admin") || User.IsInRole("Owner") || User.IsInRole("ProjectManager") || User.IsInRole("Estimator"))
                         {
-                            <a asp-page="/Jobs/Quote/AI" asp-route-jobId="@Model.Job.Id" class="btn btn-warning btn-sm">AI Quote</a>
-                            <a asp-page="/Jobs/Quote/Create" asp-route-jobId="@Model.Job.Id" class="btn btn-outline-secondary btn-sm ms-1">Manual Quote</a>
+                            <a asp-page="/Jobs/Quote/AI" asp-route-slug="@Model.Job.Slug" class="btn btn-warning btn-sm">AI Quote</a>
+                            <a asp-page="/Jobs/Quote/Create" asp-route-slug="@Model.Job.Slug" class="btn btn-outline-secondary btn-sm ms-1">Manual Quote</a>
                         }
                     }
                 </div>
@@ -166,11 +166,11 @@
                         <div class="mt-2">
                             @if (User.IsInRole("Admin") || User.IsInRole("Owner") || User.IsInRole("ProjectManager") || User.IsInRole("Foreman"))
                             {
-                                <a asp-page="/Jobs/Actuals/Enter" asp-route-jobId="@Model.Job.Id" class="btn btn-sm btn-outline-primary">Edit Actuals</a>
+                                <a asp-page="/Jobs/Actuals/Enter" asp-route-slug="@Model.Job.Slug" class="btn btn-sm btn-outline-primary">Edit Actuals</a>
                             }
                             @if (Model.Job.Estimate != null && (User.IsInRole("Admin") || User.IsInRole("Owner") || User.IsInRole("ProjectManager")))
                             {
-                                <a asp-page="/Jobs/Profitability/Index" asp-route-jobId="@Model.Job.Id" class="btn btn-sm btn-outline-success ms-1">View Profitability</a>
+                                <a asp-page="/Jobs/Profitability/Index" asp-route-slug="@Model.Job.Slug" class="btn btn-sm btn-outline-success ms-1">View Profitability</a>
                             }
                         </div>
                     }
@@ -179,8 +179,8 @@
                         <p class="text-muted mb-2">No actuals recorded yet.</p>
                         @if (User.IsInRole("Admin") || User.IsInRole("Owner") || User.IsInRole("ProjectManager") || User.IsInRole("Foreman"))
                         {
-                            <a asp-page="/Jobs/Actuals/Enter" asp-route-jobId="@Model.Job.Id" class="btn btn-warning btn-sm">Enter Actuals</a>
-                            <a asp-page="/Jobs/Actuals/Quick" asp-route-jobId="@Model.Job.Id" class="btn btn-outline-secondary btn-sm ms-1">Quick Entry</a>
+                            <a asp-page="/Jobs/Actuals/Enter" asp-route-slug="@Model.Job.Slug" class="btn btn-warning btn-sm">Enter Actuals</a>
+                            <a asp-page="/Jobs/Actuals/Quick" asp-route-slug="@Model.Job.Slug" class="btn btn-outline-secondary btn-sm ms-1">Quick Entry</a>
                         }
                     }
                 </div>

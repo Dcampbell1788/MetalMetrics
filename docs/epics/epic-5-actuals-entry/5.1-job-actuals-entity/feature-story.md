@@ -1,81 +1,64 @@
 # Feature 5.1 — Job Actuals Entity
 
-**Epic:** Epic 5 — Actuals Entry (Post-Job Tracking)
-**Status:** Pending
-**Priority:** Critical
-**Estimated Effort:** Small
+**Epic:** Epic 5 — Actuals Entry
+**Status:** Complete
 
 ---
 
 ## User Story
 
 **As a** developer,
-**I want** a `JobActuals` entity that stores the real costs incurred on a completed job,
-**so that** actual costs can be compared against estimates to determine profitability.
+**I want** a `JobActuals` entity that stores real costs incurred on a job,
+**so that** actual costs can be compared against estimates for profitability.
 
 ---
 
-## Acceptance Criteria
+## Implementation
 
-- [ ] `JobActuals` entity created in `MetalMetrics.Core` inheriting from `BaseEntity`
-- [ ] One-to-one relationship: `Job` → `JobActuals`
-- [ ] All cost fields mirror `JobEstimate` structure for direct comparison
-- [ ] `TotalActualCost` is computed from actual values
-- [ ] `ActualRevenue` captures what was actually invoiced/collected
-- [ ] `Notes` field for free-text context about the actuals
-- [ ] `EnteredBy` tracks which user recorded the actuals
-- [ ] EF Core configuration via Fluent API
-- [ ] Migration created and applied cleanly
+### JobActuals Entity (`Core/Entities/JobActuals.cs`)
 
----
+| Field | Type | Description |
+|-------|------|-------------|
+| Id | Guid | Inherited from BaseEntity |
+| JobId | Guid | FK to Job |
+| ActualLaborHours | decimal | Actual labor hours worked |
+| LaborRate | decimal | Actual $/hr (may differ from estimate) |
+| ActualMaterialCost | decimal | Actual material cost |
+| ActualMachineHours | decimal | Actual machine hours |
+| MachineRate | decimal | Actual $/hr |
+| OverheadPercent | decimal | Actual overhead % applied |
+| TotalActualCost | decimal | Computed by ActualsService |
+| ActualRevenue | decimal | What was invoiced/collected |
+| Notes | string | Free-text context |
+| EnteredBy | string | User email who recorded actuals |
 
-## Entity Fields
+### Cost Calculation Formula (ActualsService.CalculateTotals)
 
-| Field                | Type      | Notes                                     |
-|----------------------|-----------|-------------------------------------------|
-| `Id`                 | Guid      | Inherited from `BaseEntity`               |
-| `JobId`              | Guid      | FK to `Job`                               |
-| `TenantId`           | Guid      | Inherited from `BaseEntity`               |
-| `ActualLaborHours`   | decimal   | Actual labor hours worked                 |
-| `LaborRate`          | decimal   | Actual labor rate (may differ from est.)  |
-| `ActualMaterialCost` | decimal   | Actual material cost                      |
-| `ActualMachineHours` | decimal   | Actual machine time used                  |
-| `MachineRate`        | decimal   | Actual machine rate                       |
-| `OverheadPercent`    | decimal   | Actual overhead percentage applied        |
-| `TotalActualCost`    | decimal   | Computed total actual cost                |
-| `ActualRevenue`      | decimal   | What was invoiced/collected from customer |
-| `Notes`              | string    | Free-text notes about the actuals         |
-| `EnteredBy`          | string    | User who recorded the actuals             |
-| `CreatedAt`          | DateTime  | Inherited from `BaseEntity`               |
-| `UpdatedAt`          | DateTime  | Inherited from `BaseEntity`               |
+Same formula as estimates:
+```
+Subtotal = (ActualLaborHours * LaborRate) + ActualMaterialCost + (ActualMachineHours * MachineRate)
+Overhead = Subtotal * (OverheadPercent / 100)
+TotalActualCost = Subtotal + Overhead
+```
 
----
+### IActualsService (`Core/Interfaces/IActualsService.cs`)
 
-## Technical Notes
+```csharp
+Task<JobActuals?> GetByJobIdAsync(Guid jobId);
+Task SaveAsync(JobActuals actuals);          // Upsert: update if exists, insert if new
+JobActuals CalculateTotals(JobActuals actuals);
+```
 
-- Entity: `MetalMetrics.Core/Entities/JobActuals.cs`
-- Config: `MetalMetrics.Infrastructure/Data/Configurations/JobActualsConfiguration.cs`
-- `TotalActualCost` formula matches `JobEstimate`:
-  ```
-  (ActualLaborHours * LaborRate) + ActualMaterialCost + (ActualMachineHours * MachineRate) + Overhead
-  ```
-- Navigation: `Job.Actuals` property for easy access
-- Service: `IActualsService` / `ActualsService`
+### Relationship
 
----
-
-## Dependencies
-
-- Feature 1.2 (EF Core + SQLite)
-- Feature 1.3 (Base Entity Model)
-- Feature 3.2 (Job Entity — FK relationship)
+One-to-one with Job (`Job.Actuals`). Cascade delete configured in AppDbContext.
 
 ---
 
 ## Definition of Done
 
-- [ ] `JobActuals` entity created with all fields and relationships
-- [ ] Fluent API configuration applied
-- [ ] Migration created and database updated
-- [ ] `TotalActualCost` computed correctly
-- [ ] At least 1 unit test for cost computation
+- [x] JobActuals entity with all cost fields
+- [x] IActualsService with upsert Save and CalculateTotals
+- [x] One-to-one with Job, cascade delete
+- [x] Migration applied
+- [x] 2 unit tests for cost calculation

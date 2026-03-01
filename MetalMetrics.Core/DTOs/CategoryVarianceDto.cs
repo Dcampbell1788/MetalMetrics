@@ -6,4 +6,5 @@ public class CategoryVarianceDto
     public decimal AverageVariancePercent { get; set; }
     public string Direction { get; set; } = string.Empty;
     public int JobCount { get; set; }
+    public decimal AverageDollarVariance { get; set; }
 }

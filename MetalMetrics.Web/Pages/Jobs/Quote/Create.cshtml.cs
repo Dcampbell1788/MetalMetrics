@@ -27,7 +27,7 @@ public class CreateModel : PageModel
 
     public string JobNumber { get; set; } = string.Empty;
     public string CustomerName { get; set; } = string.Empty;
-    public Guid JobId { get; set; }
+    public string JobSlug { get; set; } = string.Empty;
 
     [BindProperty]
     public InputModel Input { get; set; } = new();
@@ -70,17 +70,17 @@ public class CreateModel : PageModel
         public decimal QuotePrice { get; set; }
     }
 
-    public async Task<IActionResult> OnGetAsync(Guid jobId)
+    public async Task<IActionResult> OnGetAsync(string slug)
     {
-        var job = await _jobService.GetByIdAsync(jobId);
+        var job = await _jobService.GetBySlugAsync(slug);
         if (job == null) return NotFound();
 
         if (job.Estimate != null)
         {
-            return RedirectToPage("View", new { jobId });
+            return RedirectToPage("View", new { slug });
         }
 
-        JobId = job.Id;
+        JobSlug = job.Slug;
         JobNumber = job.JobNumber;
         CustomerName = job.CustomerName;
 
@@ -98,12 +98,12 @@ public class CreateModel : PageModel
         return Page();
     }
 
-    public async Task<IActionResult> OnPostAsync(Guid jobId)
+    public async Task<IActionResult> OnPostAsync(string slug)
     {
-        var job = await _jobService.GetByIdAsync(jobId);
+        var job = await _jobService.GetBySlugAsync(slug);
         if (job == null) return NotFound();
 
-        JobId = job.Id;
+        JobSlug = job.Slug;
         JobNumber = job.JobNumber;
         CustomerName = job.CustomerName;
 
@@ -114,7 +114,7 @@ public class CreateModel : PageModel
 
         var estimate = new JobEstimate
         {
-            JobId = jobId,
+            JobId = job.Id,
             EstimatedLaborHours = Input.EstimatedLaborHours,
             LaborRate = Input.LaborRate,
             EstimatedMaterialCost = Input.EstimatedMaterialCost,
@@ -128,6 +128,6 @@ public class CreateModel : PageModel
         await _quoteService.CreateAsync(estimate);
 
         TempData["Success"] = $"Quote created for {job.JobNumber}.";
-        return RedirectToPage("/Jobs/Details", new { id = jobId });
+        return RedirectToPage("/Jobs/Details", new { slug = job.Slug });
     }
 }

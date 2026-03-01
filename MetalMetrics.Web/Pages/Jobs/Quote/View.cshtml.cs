@@ -10,20 +10,27 @@ namespace MetalMetrics.Web.Pages.Jobs.Quote;
 public class ViewModel : PageModel
 {
     private readonly IQuoteService _quoteService;
+    private readonly IJobService _jobService;
 
-    public ViewModel(IQuoteService quoteService)
+    public ViewModel(IQuoteService quoteService, IJobService jobService)
     {
         _quoteService = quoteService;
+        _jobService = jobService;
     }
 
     public JobEstimate Estimate { get; set; } = default!;
+    public string JobSlug { get; set; } = string.Empty;
 
-    public async Task<IActionResult> OnGetAsync(Guid jobId)
+    public async Task<IActionResult> OnGetAsync(string slug)
     {
-        var estimate = await _quoteService.GetByJobIdAsync(jobId);
+        var job = await _jobService.GetBySlugAsync(slug);
+        if (job == null) return NotFound();
+
+        var estimate = await _quoteService.GetByJobIdAsync(job.Id);
         if (estimate == null) return NotFound();
 
         Estimate = estimate;
+        JobSlug = slug;
         return Page();
     }
 }

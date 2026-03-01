@@ -36,35 +36,40 @@ public class AssignModel : PageModel
     public Job Job { get; set; } = default!;
     public List<JobAssignment> Assignments { get; set; } = new();
     public List<AppUser> AvailableUsers { get; set; } = new();
+    public HashSet<AppRole> RemovableRoles { get; set; } = new();
 
     [BindProperty]
     public string? SelectedUserId { get; set; }
 
-    public async Task<IActionResult> OnGetAsync(Guid id)
+    public async Task<IActionResult> OnGetAsync(string slug)
     {
-        var job = await _jobService.GetByIdAsync(id);
+        var job = await _jobService.GetBySlugAsync(slug);
         if (job == null) return NotFound();
 
         Job = job;
-        Assignments = (await _assignmentService.GetByJobIdAsync(id))
+        Assignments = (await _assignmentService.GetByJobIdAsync(job.Id))
             .OrderBy(a => a.User != null ? RoleOrder(a.User.Role) : 99)
             .ThenBy(a => a.User?.FullName)
             .ToList();
-        await LoadAvailableUsersAsync(id);
+        await LoadAvailableUsersAsync(job.Id);
+
+        var currentUser = await _userManager.GetUserAsync(User);
+        if (currentUser != null)
+            RemovableRoles = GetAssignableRoles(currentUser.Role).ToHashSet();
 
         return Page();
     }
 
-    public async Task<IActionResult> OnPostAssignAsync(Guid id)
+    public async Task<IActionResult> OnPostAssignAsync(string slug)
     {
         if (string.IsNullOrEmpty(SelectedUserId))
         {
             TempData["Error"] = "Please select a user to assign.";
-            return RedirectToPage(new { id });
+            return RedirectToPage(new { slug });
         }
 
         // Verify job exists in this tenant
-        var job = await _jobService.GetByIdAsync(id);
+        var job = await _jobService.GetBySlugAsync(slug);
         if (job == null) return NotFound();
 
         var currentUser = await _userManager.GetUserAsync(User);
@@ -75,7 +80,7 @@ public class AssignModel : PageModel
         if (assignedUser == null || assignedUser.TenantId != currentUser.TenantId)
         {
             TempData["Error"] = "Invalid user selection.";
-            return RedirectToPage(new { id });
+            return RedirectToPage(new { slug });
         }
 
         // Verify target user role is within assignable hierarchy
@@ -83,19 +88,22 @@ public class AssignModel : PageModel
         if (!allowedRoles.Contains(assignedUser.Role))
         {
             TempData["Error"] = "You do not have permission to assign this user.";
-            return RedirectToPage(new { id });
+            return RedirectToPage(new { slug });
         }
 
-        await _assignmentService.AssignAsync(id, SelectedUserId, currentUser.Id);
+        await _assignmentService.AssignAsync(job.Id, SelectedUserId, currentUser.Id);
 
         TempData["Success"] = $"{assignedUser.FullName} assigned to job.";
-        return RedirectToPage(new { id });
+        return RedirectToPage(new { slug });
     }
 
-    public async Task<IActionResult> OnPostRemoveAsync(Guid id, string userId)
+    public async Task<IActionResult> OnPostRemoveAsync(string slug, string userId)
     {
         var currentUser = await _userManager.GetUserAsync(User);
         if (currentUser == null) return Forbid();
+
+        var job = await _jobService.GetBySlugAsync(slug);
+        if (job == null) return NotFound();
 
         // Verify the target user is within this user's assignable role hierarchy
         var targetUser = await _userManager.FindByIdAsync(userId);
@@ -105,12 +113,12 @@ public class AssignModel : PageModel
         if (!allowedRoles.Contains(targetUser.Role))
         {
             TempData["Error"] = "You do not have permission to remove this assignment.";
-            return RedirectToPage(new { id });
+            return RedirectToPage(new { slug });
         }
 
-        await _assignmentService.RemoveAsync(id, userId);
+        await _assignmentService.RemoveAsync(job.Id, userId);
         TempData["Success"] = "Assignment removed.";
-        return RedirectToPage(new { id });
+        return RedirectToPage(new { slug });
     }
 
     private async Task LoadAvailableUsersAsync(Guid jobId)

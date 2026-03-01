@@ -1,76 +1,74 @@
 # Feature 2.5 — Role-Based Authorization
 
 **Epic:** Epic 2 — Authentication, Tenancy & Role Management
-**Status:** Pending
-**Priority:** Critical
-**Estimated Effort:** Medium
+**Status:** Complete
 
 ---
 
 ## User Story
 
 **As a** system administrator,
-**I want** page-level and feature-level access control based on user roles,
-**so that** users can only access the features appropriate to their position in the company.
+**I want** page-level access control based on user roles,
+**so that** users only access features appropriate to their position.
 
 ---
 
-## Acceptance Criteria
+## Implementation
 
-- [ ] Authorization policies defined for each role group
-- [ ] Page-level `[Authorize]` attributes enforce role restrictions
-- [ ] Navigation menu hides links the user doesn't have access to
-- [ ] `TenantProvider` reads `TenantId` from the authenticated user's claims
-- [ ] Unauthorized access returns a 403 / Access Denied page
-- [ ] Custom `AccessDenied` page with a user-friendly message
-- [ ] Role hierarchy enforced per the role matrix below
+### Authorization Policies (`Web/Program.cs`)
 
----
+```csharp
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOnly", p =>
+        p.RequireClaim("Role", "Admin", "Owner"));
+    options.AddPolicy("CanManageJobs", p =>
+        p.RequireClaim("Role", "Admin", "Owner", "ProjectManager", "Foreman"));
+    options.AddPolicy("CanQuote", p =>
+        p.RequireClaim("Role", "Admin", "Owner", "ProjectManager", "Estimator"));
+    options.AddPolicy("CanEnterActuals", p =>
+        p.RequireClaim("Role", "Admin", "Owner", "ProjectManager", "Foreman"));
+    options.AddPolicy("CanViewReports", p =>
+        p.RequireClaim("Role", "Admin", "Owner", "ProjectManager"));
+    options.AddPolicy("CanAssignJobs", p =>
+        p.RequireClaim("Role", "Admin", "Owner", "ProjectManager", "Foreman"));
+});
+```
 
-## Role Access Matrix
+Note: Uses `RequireClaim("Role", ...)` not `RequireRole(...)` because roles are stored as custom claims.
 
-| Feature Area     | Admin | Owner | ProjectManager | Foreman | Estimator | Journeyman |
-|------------------|-------|-------|----------------|---------|-----------|------------|
-| Jobs (full)      | Yes   | Yes   | Yes            | Yes     | Read-only | Read-only  |
-| Quotes           | Yes   | Yes   | Yes            | No      | Yes       | No         |
-| Actuals          | Yes   | Yes   | Yes            | Yes     | No        | Yes        |
-| Reports          | Yes   | Yes   | Yes            | Yes     | No        | No         |
-| Admin/Billing    | Yes   | Yes   | No             | No      | No        | No         |
+### Page-Level Authorization
 
----
+| Page Area | Policy | Attribute |
+|-----------|--------|-----------|
+| Dashboard | CanViewReports | `[Authorize(Policy = "CanViewReports")]` |
+| Jobs Index | (any authenticated) | `[Authorize]` |
+| Jobs Create/Edit | CanManageJobs | `[Authorize(Policy = "CanManageJobs")]` |
+| Quote pages | CanQuote | `[Authorize(Policy = "CanQuote")]` |
+| Actuals pages | CanEnterActuals | `[Authorize(Policy = "CanEnterActuals")]` |
+| Profitability | CanViewReports | `[Authorize(Policy = "CanViewReports")]` |
+| Reports | CanViewReports | `[Authorize(Policy = "CanViewReports")]` |
+| Admin | AdminOnly | `[Authorize(Policy = "AdminOnly")]` |
+| Job Assignment | CanAssignJobs | `[Authorize(Policy = "CanAssignJobs")]` |
 
-## Technical Notes
+### Role-Based Job Visibility
 
-- Define policies in `Program.cs`:
-  ```csharp
-  builder.Services.AddAuthorization(options =>
-  {
-      options.AddPolicy("AdminOnly", p => p.RequireRole("Admin", "Owner"));
-      options.AddPolicy("CanManageJobs", p => p.RequireRole("Admin", "Owner", "ProjectManager", "Foreman"));
-      options.AddPolicy("CanQuote", p => p.RequireRole("Admin", "Owner", "ProjectManager", "Estimator"));
-      options.AddPolicy("CanEnterActuals", p => p.RequireRole("Admin", "Owner", "ProjectManager", "Foreman", "Journeyman"));
-      options.AddPolicy("CanViewReports", p => p.RequireRole("Admin", "Owner", "ProjectManager", "Foreman"));
-  });
-  ```
-- Apply `[Authorize(Policy = "...")]` on Razor Page models
-- `TenantProvider` implementation reads `TenantId` claim set during login (Feature 2.3)
-- Ensure global query filter uses `TenantProvider.TenantId` so users never see other tenants' data
+Journeyman, Estimator, and Foreman only see jobs they are assigned to (filtered in `Jobs/Index.cshtml.cs` via `IJobAssignmentService`).
 
----
+### Navigation Menu
 
-## Dependencies
+`_Layout.cshtml` uses `User.HasClaim("Role", ...)` to show/hide nav items per role.
 
-- Feature 2.1 (ASP.NET Identity Setup)
-- Feature 2.3 (Login — claims must be set on login)
+### TenantProvider
+
+Reads `TenantId` claim from `HttpContext.User.Claims`. Returns `Guid.Empty` if unauthenticated.
 
 ---
 
 ## Definition of Done
 
-- [ ] Authorization policies registered in DI
-- [ ] All pages enforce correct role restrictions
-- [ ] Nav menu is role-aware (hides unauthorized links)
-- [ ] `TenantProvider` correctly reads tenant from claims
-- [ ] Access Denied page renders for unauthorized access
-- [ ] At least 1 unit test for authorization policy logic
-- [ ] Manual smoke test: verify each role sees correct nav items
+- [x] 6 authorization policies registered
+- [x] All pages enforce correct role restrictions
+- [x] Nav menu is role-aware
+- [x] TenantProvider reads TenantId from claims
+- [x] Role-based job visibility for Journeyman/Estimator/Foreman

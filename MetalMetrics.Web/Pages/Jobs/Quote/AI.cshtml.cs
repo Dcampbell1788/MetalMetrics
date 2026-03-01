@@ -28,7 +28,7 @@ public class AIModel : PageModel
 
     public string JobNumber { get; set; } = string.Empty;
     public string CustomerName { get; set; } = string.Empty;
-    public Guid JobId { get; set; }
+    public string JobSlug { get; set; } = string.Empty;
 
     [BindProperty]
     public InputModel Input { get; set; } = new();
@@ -82,23 +82,23 @@ public class AIModel : PageModel
         "Simple", "Moderate", "Complex"
     };
 
-    public async Task<IActionResult> OnGetAsync(Guid jobId)
+    public async Task<IActionResult> OnGetAsync(string slug)
     {
-        var job = await _jobService.GetByIdAsync(jobId);
+        var job = await _jobService.GetBySlugAsync(slug);
         if (job == null) return NotFound();
 
-        JobId = job.Id;
+        JobSlug = job.Slug;
         JobNumber = job.JobNumber;
         CustomerName = job.CustomerName;
         return Page();
     }
 
-    public async Task<IActionResult> OnPostAsync(Guid jobId)
+    public async Task<IActionResult> OnPostAsync(string slug)
     {
-        var job = await _jobService.GetByIdAsync(jobId);
+        var job = await _jobService.GetBySlugAsync(slug);
         if (job == null) return NotFound();
 
-        JobId = job.Id;
+        JobSlug = job.Slug;
         JobNumber = job.JobNumber;
         CustomerName = job.CustomerName;
 
@@ -122,7 +122,7 @@ public class AIModel : PageModel
             SpecialNotes = Input.SpecialNotes,
             LaborRate = settings?.DefaultLaborRate ?? 75m,
             MachineRate = settings?.DefaultMachineRate ?? 150m,
-            OverheadPercent = settings?.DefaultOverheadPercent ?? 15m
+            OverheadPercent = settings?.DefaultOverheadPercent ?? 30m
         };
 
         var (response, error, promptSnapshot) = await _aiQuoteService.GenerateQuoteAsync(request);
@@ -137,6 +137,6 @@ public class AIModel : PageModel
         TempData["AIPromptSnapshot"] = promptSnapshot;
         TempData["AIRequest"] = JsonSerializer.Serialize(request);
 
-        return RedirectToPage("Review", new { jobId });
+        return RedirectToPage("Review", new { slug });
     }
 }

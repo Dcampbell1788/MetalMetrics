@@ -23,9 +23,9 @@ public class IndexModel : PageModel
     public JobProfitabilityReport? Report { get; set; }
     public bool HasActuals { get; set; }
 
-    public async Task<IActionResult> OnGetAsync(Guid jobId)
+    public async Task<IActionResult> OnGetAsync(string slug)
     {
-        var job = await _jobService.GetByIdAsync(jobId);
+        var job = await _jobService.GetBySlugAsync(slug);
         if (job == null) return NotFound();
 
         Job = job;
@@ -33,7 +33,7 @@ public class IndexModel : PageModel
 
         if (HasActuals)
         {
-            Report = await _profitabilityService.CalculateAsync(jobId);
+            Report = await _profitabilityService.CalculateAsync(job.Id);
         }
 
         return Page();

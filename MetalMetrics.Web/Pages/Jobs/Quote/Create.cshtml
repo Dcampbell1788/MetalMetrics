@@ -1,4 +1,4 @@
-@page "{jobId:guid}"
+@page "{slug}"
 @model MetalMetrics.Web.Pages.Jobs.Quote.CreateModel
 @{
     ViewData["Title"] = $"Create Quote — {Model.JobNumber}";
@@ -11,7 +11,7 @@
     <div class="col-md-8">
         <div class="card shadow-sm">
             <div class="card-body">
-                <form method="post" asp-route-jobId="@Model.JobId">
+                <form method="post" asp-route-slug="@Model.JobSlug">
                     <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
                     <h5 class="mb-3">Labor</h5>
@@ -79,7 +79,7 @@
                     </div>
 
                     <button type="submit" class="btn btn-warning">Create Quote</button>
-                    <a asp-page="/Jobs/Details" asp-route-id="@Model.JobId" class="btn btn-outline-secondary ms-2">Cancel</a>
+                    <a asp-page="/Jobs/Details" asp-route-slug="@Model.JobSlug" class="btn btn-outline-secondary ms-2">Cancel</a>
                 </form>
             </div>
         </div>

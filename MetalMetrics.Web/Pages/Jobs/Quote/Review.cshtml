@@ -1,4 +1,4 @@
-@page "{jobId:guid}"
+@page "{slug}"
 @model MetalMetrics.Web.Pages.Jobs.Quote.ReviewModel
 @{
     ViewData["Title"] = "Review AI Quote";
@@ -82,7 +82,7 @@
                 <h5 class="mb-0">Your Estimate (Editable)</h5>
             </div>
             <div class="card-body">
-                <form method="post" asp-route-jobId="@Model.JobId">
+                <form method="post" asp-route-slug="@Model.JobSlug">
                     <input type="hidden" asp-for="PromptSnapshot" />
                     <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
@@ -154,8 +154,8 @@
 
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-warning">Accept & Save</button>
-                        <a asp-page="AI" asp-route-jobId="@Model.JobId" class="btn btn-outline-secondary">Start Over</a>
-                        <a asp-page="Create" asp-route-jobId="@Model.JobId" class="btn btn-outline-secondary">Quote Manually</a>
+                        <a asp-page="AI" asp-route-slug="@Model.JobSlug" class="btn btn-outline-secondary">Start Over</a>
+                        <a asp-page="Create" asp-route-slug="@Model.JobSlug" class="btn btn-outline-secondary">Quote Manually</a>
                     </div>
                 </form>
             </div>

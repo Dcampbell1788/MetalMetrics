@@ -1,90 +1,76 @@
 # Feature 3.3 — Quote / Estimate Entity
 
-**Epic:** Epic 3 — Job & Quote Management (Core Data)
-**Status:** Pending
-**Priority:** Critical
-**Estimated Effort:** Large
+**Epic:** Epic 3 — Job & Quote Management
+**Status:** Complete
 
 ---
 
 ## User Story
 
 **As an** estimator or project manager,
-**I want** to create detailed cost estimates for a job broken down by labor, material, machine, and overhead,
-**so that** I can generate accurate quotes and track whether the AI assisted in creating the estimate.
+**I want** to create detailed cost estimates broken down by labor, material, machine, and overhead,
+**so that** I can generate accurate quotes and track AI-assisted estimation.
 
 ---
 
-## Acceptance Criteria
+## Implementation
 
-- [ ] `JobEstimate` entity created with all cost breakdown fields
-- [ ] One-to-one relationship: `Job` → `JobEstimate`
-- [ ] **Create Quote page** (`/Jobs/{jobId}/Quote/Create`): form with all estimate fields
-- [ ] **View Quote page** (`/Jobs/{jobId}/Quote/View`): read-only display of estimate
-- [ ] `TotalEstimatedCost` is computed (labor + material + machine + overhead)
-- [ ] `EstimatedMarginPercent` is computed from `QuotePrice` vs `TotalEstimatedCost`
-- [ ] Form pre-populates rates from `TenantSettings` defaults
-- [ ] `AIGenerated` flag tracks if the estimate was created via AI
-- [ ] `AIPromptSnapshot` stores the AI prompt/response JSON for auditing
-- [ ] Access: Admin, Owner, ProjectManager, Estimator
+### JobEstimate Entity (`Core/Entities/JobEstimate.cs`)
 
----
+| Field | Type | Description |
+|-------|------|-------------|
+| Id | Guid | Inherited from BaseEntity |
+| JobId | Guid | FK to Job |
+| EstimatedLaborHours | decimal | Total labor hours |
+| LaborRate | decimal | $/hour |
+| EstimatedMaterialCost | decimal | Total material cost |
+| EstimatedMachineHours | decimal | Machine hours |
+| MachineRate | decimal | $/hour |
+| OverheadPercent | decimal | Applied to subtotal |
+| TotalEstimatedCost | decimal | Computed by service |
+| QuotePrice | decimal | Price to customer |
+| EstimatedMarginPercent | decimal | Computed by service |
+| AIGenerated | bool | Created via Claude AI? |
+| AIPromptSnapshot | string? | JSON of AI prompt + response |
+| CreatedBy | string | User email |
 
-## Entity Fields
+### Cost Calculation Formula (QuoteService.CalculateTotals)
 
-| Field                    | Type      | Notes                                      |
-|--------------------------|-----------|--------------------------------------------|
-| `Id`                     | Guid      | Inherited from `BaseEntity`                |
-| `JobId`                  | Guid      | FK to `Job`                                |
-| `TenantId`               | Guid      | Inherited from `BaseEntity`                |
-| `EstimatedLaborHours`    | decimal   | Total labor hours estimated                |
-| `LaborRate`              | decimal   | $/hour for labor                           |
-| `EstimatedMaterialCost`  | decimal   | Total material cost (sheet/plate)          |
-| `EstimatedMachineHours`  | decimal   | Machine time in hours                      |
-| `MachineRate`            | decimal   | $/hour for machine time                    |
-| `OverheadPercent`        | decimal   | Overhead % applied to subtotal             |
-| `TotalEstimatedCost`     | decimal   | Computed: labor + material + machine + OH  |
-| `QuotePrice`             | decimal   | Price quoted to customer                   |
-| `EstimatedMarginPercent` | decimal   | Computed: (quote - cost) / quote * 100     |
-| `AIGenerated`            | bool      | Was this created via AI?                   |
-| `AIPromptSnapshot`       | string    | JSON blob of AI prompt and response        |
-| `CreatedBy`              | string    | User who created the estimate              |
-| `CreatedAt`              | DateTime  | Inherited from `BaseEntity`                |
+```
+Subtotal = (LaborHours * LaborRate) + MaterialCost + (MachineHours * MachineRate)
+Overhead = Subtotal * (OverheadPercent / 100)
+TotalEstimatedCost = Subtotal + Overhead
+EstimatedMarginPercent = QuotePrice > 0 ? (QuotePrice - TotalCost) / QuotePrice * 100 : 0
+```
 
----
+### IQuoteService (`Core/Interfaces/IQuoteService.cs`)
 
-## Technical Notes
+```csharp
+Task<JobEstimate?> GetByJobIdAsync(Guid jobId);
+Task<JobEstimate> CreateAsync(JobEstimate estimate);
+JobEstimate CalculateTotals(JobEstimate estimate);
+```
 
-- Entity: `MetalMetrics.Core/Entities/JobEstimate.cs`
-- Service: `IQuoteService` / `QuoteService`
-- Computed fields can be calculated in the service layer before saving, or as C# computed properties
-- `TotalEstimatedCost` formula:
-  ```
-  (LaborHours * LaborRate) + MaterialCost + (MachineHours * MachineRate) + Overhead
-  Overhead = OverheadPercent / 100 * (Labor + Material + Machine subtotal)
-  ```
-- Pre-populate `LaborRate`, `MachineRate`, `OverheadPercent` from `TenantSettings` (Feature 3.4)
-- `AIPromptSnapshot` stores JSON — use `string` type with JSON serialization
+### Pages
 
----
+| Page | Path | Purpose |
+|------|------|---------|
+| Manual Quote | `/Jobs/Quote/Create/{slug}` | Form with all cost fields, pre-populated from TenantSettings |
+| AI Quote | `/Jobs/Quote/AI/{slug}` | Structured form for Claude API input |
+| AI Review | `/Jobs/Quote/Review/{slug}` | Side-by-side AI suggestion vs editable form |
+| View Quote | `/Jobs/Quote/View/{slug}` | Read-only estimate display |
 
-## Dependencies
+### Rate Pre-Population
 
-- Feature 3.2 (Job Entity — FK to Job)
-- Feature 3.4 (Cost Category Configuration — for default rate pre-population)
-- Feature 2.5 (Role-Based Authorization)
+Quote forms load defaults from `TenantSettings`: `DefaultLaborRate`, `DefaultMachineRate`, `DefaultOverheadPercent`.
 
 ---
 
 ## Definition of Done
 
-- [ ] `JobEstimate` entity with all fields and relationships configured
-- [ ] `IQuoteService` interface and `QuoteService` implementation
-- [ ] Create and View quote pages render correctly
-- [ ] Computed fields calculate correctly
-- [ ] Default rates pre-populate from `TenantSettings`
-- [ ] `AIGenerated` and `AIPromptSnapshot` fields work correctly
-- [ ] Tenant scoping verified
-- [ ] Role-based access enforced
-- [ ] At least 1 unit test for cost calculation logic
-- [ ] Manual smoke test passed
+- [x] JobEstimate entity with all cost breakdown fields
+- [x] IQuoteService with CalculateTotals formula
+- [x] Create, View, AI, Review pages working
+- [x] AIGenerated flag and AIPromptSnapshot for audit
+- [x] Default rates from TenantSettings
+- [x] 2 unit tests for cost calculation

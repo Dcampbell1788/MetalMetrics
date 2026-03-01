@@ -82,7 +82,7 @@ else
                         {
                             <tr>
                                 <td>
-                                    <a asp-page="/Jobs/Details" asp-route-id="@job.JobId">@job.JobNumber</a>
+                                    <a asp-page="/Jobs/Details" asp-route-slug="@job.Slug">@job.JobNumber</a>
                                 </td>
                                 <td>@job.CustomerName</td>
                                 <td class="text-end">@job.QuotePrice.ToString("C0")</td>

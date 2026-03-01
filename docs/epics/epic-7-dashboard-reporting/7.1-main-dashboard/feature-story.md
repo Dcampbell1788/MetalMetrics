@@ -1,86 +1,87 @@
 # Feature 7.1 — Main Dashboard
 
 **Epic:** Epic 7 — Dashboard & Reporting
-**Status:** Pending
-**Priority:** High
-**Estimated Effort:** Medium
+**Status:** Complete
 
 ---
 
 ## User Story
 
 **As a** company owner or project manager,
-**I want** to see key business metrics at a glance when I log in,
-**so that** I can quickly assess the health of my fabrication business without digging through individual jobs.
+**I want** key business metrics at a glance when I log in,
+**so that** I can quickly assess business health.
 
 ---
 
-## Acceptance Criteria
+## Implementation
 
-- [ ] Dashboard is the landing page after login (`/Dashboard`)
-- [ ] Displays KPI cards in a top row:
-  - Total Jobs (this month / all time)
-  - Average Margin %
-  - Jobs Over Budget (count of jobs with actual margin below target)
-  - Revenue This Month
-- [ ] KPI cards are visually distinct with icons or colored accents
-- [ ] Dashboard data is scoped to the current tenant
-- [ ] Data only includes completed jobs with actuals for margin/budget metrics
-- [ ] Empty state handled gracefully ("No completed jobs yet")
-- [ ] Access: Admin, Owner, ProjectManager, Foreman
+### Page: `/Dashboard` (`Web/Pages/Dashboard/Index.cshtml.cs`)
 
----
+**Authorization:** `[Authorize(Policy = "CanViewReports")]`
+**Landing page** for Owner/Admin/ProjectManager (redirected from Index.cshtml.cs).
 
-## Page Layout
+### IDashboardService (`Core/Interfaces/IDashboardService.cs`)
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  Dashboard                                          Welcome, John │
-├────────────────┬────────────────┬───────────────┬───────────────┤
-│  Total Jobs    │  Avg Margin    │ Over Budget   │ Revenue (Mo)  │
-│                │                │               │               │
-│     42         │    18.3%       │     7         │   $52,400     │
-│  8 this month  │  Target: 20%  │  ⚠️ 16.7%    │               │
-└────────────────┴────────────────┴───────────────┴───────────────┘
-│                                                                   │
-│  (Charts from Features 7.2–7.5 render below)                     │
-│                                                                   │
-└───────────────────────────────────────────────────────────────────┘
+```csharp
+Task<DashboardKpiDto> GetKpisAsync();
+Task<List<JobSummaryDto>> GetJobSummariesAsync(int limit = 20);
+Task<List<CustomerProfitabilityDto>> GetCustomerProfitabilityAsync();
+Task<List<CategoryVarianceDto>> GetCategoryVariancesAsync();
+Task<List<AtRiskJobDto>> GetAtRiskJobsAsync(decimal thresholdPercent = 10);
 ```
 
----
+### DashboardKpiDto (`Core/DTOs/DashboardKpiDto.cs`)
 
-## Technical Notes
+```csharp
+public class DashboardKpiDto
+{
+    public int TotalJobs { get; set; }
+    public int JobsThisMonth { get; set; }
+    public decimal AverageMarginPercent { get; set; }
+    public int JobsOverBudget { get; set; }          // Below target margin
+    public decimal RevenueThisMonth { get; set; }
+    public decimal TargetMarginPercent { get; set; }
+    public decimal TotalRevenue { get; set; }          // All-time revenue
+    public int InProgressCount { get; set; }
+    public int QuotedCount { get; set; }
+    public decimal InProgressEstimatedValue { get; set; }
+}
+```
 
-- Page: `Pages/Dashboard/Index.cshtml` + `Index.cshtml.cs`
-- Create a `IDashboardService` / `DashboardService` to aggregate KPI data
-- KPI queries:
-  - Total Jobs: `COUNT(*)` from `Jobs` where `TenantId = current`
-  - This Month: filter by `CreatedAt` in current month
-  - Avg Margin: `AVG(ActualMarginPercent)` across completed jobs with actuals
-  - Over Budget: `COUNT(*)` where `ActualMarginPercent < TargetMarginPercent`
-  - Revenue This Month: `SUM(ActualRevenue)` where completed this month
-- Use Bootstrap cards for KPI display
-- Consider caching dashboard data if queries are slow (unlikely with SQLite for demo)
-- Set as the default authenticated page in routing
+### Page Model Properties
 
----
+```csharp
+public DashboardKpiDto Kpis { get; set; }
+public List<JobSummaryDto> JobSummaries { get; set; }
+public List<CustomerProfitabilityDto> CustomerProfitability { get; set; }
+public List<CategoryVarianceDto> CategoryVariances { get; set; }
+public List<AtRiskJobDto> AtRiskJobs { get; set; }
+public string JobSummariesJson { get; set; }  // Serialized for Chart.js
+```
 
-## Dependencies
+### Dashboard Sections (top to bottom)
 
-- Feature 1.4 (Shared Layout)
-- Feature 3.2 (Job Entity — for job counts)
-- Feature 5.1 (Job Actuals — for revenue and margin data)
-- Feature 6.1 (Profitability Service — for margin calculations)
-- Feature 2.5 (Role-Based Authorization)
+1. **At-Risk Alert Banner** — Red alerts for InProgress jobs >10% over budget
+2. **KPI Cards** (5 cards, `row-cols-lg-5`) — Total Jobs, Avg Margin, Below Target (clickable), Revenue (Month), Total Revenue
+3. **Work Pipeline** — Quoted count, InProgress count (both clickable), InProgress estimated value
+4. **Est vs Actual Chart** — Chronologically sorted, color-coded bars
+5. **Margin Trend Chart** — Line chart with target annotation line
+6. **Estimating Accuracy Table** — Variance % + $ + arrow icons
+7. **Customer Profitability Table** — Row highlighting + sort toggle
+
+### Empty State
+
+If no completed jobs with actuals, shows message: "No completed jobs with actuals yet." Pipeline and KPI sections still show.
 
 ---
 
 ## Definition of Done
 
-- [ ] Dashboard renders as the post-login landing page
-- [ ] All 4 KPI cards display correct data
-- [ ] Data is tenant-scoped
-- [ ] Empty state handled for new tenants
-- [ ] Role-based access enforced
-- [ ] Manual smoke test passed
+- [x] Dashboard is post-login landing page for Owner/Admin/PM
+- [x] 5 KPI cards with correct data
+- [x] At-risk alert banner
+- [x] Work pipeline section with clickable links
+- [x] 2 charts (est vs actual, margin trend)
+- [x] 2 tables (estimating accuracy, customer profitability)
+- [x] Data tenant-scoped
+- [x] Empty state handled

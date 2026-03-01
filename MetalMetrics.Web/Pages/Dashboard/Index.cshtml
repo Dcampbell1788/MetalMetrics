@@ -6,10 +6,25 @@
 
 <h2 class="mb-4">Dashboard</h2>
 
-<!-- KPI Cards -->
-<div class="row mb-4">
-    <div class="col-md-3">
-        <div class="card shadow-sm border-start border-4 border-primary">
+<!-- 6a. At-Risk Alert Banner -->
+@if (Model.AtRiskJobs.Count > 0)
+{
+    <div class="mb-4">
+        @foreach (var risk in Model.AtRiskJobs)
+        {
+            <div class="alert alert-danger d-flex align-items-center py-2 mb-2">
+                <strong class="me-2">At Risk:</strong>
+                <span>@risk.JobNumber — @risk.CustomerName is @risk.OveragePercent.ToString("F0")% over budget</span>
+                <a href="/Jobs/Actuals/Enter/@risk.Slug" class="btn btn-sm btn-outline-danger ms-auto">Review Actuals</a>
+            </div>
+        }
+    </div>
+}
+
+<!-- 6b. KPI Cards — 5 cards -->
+<div class="row row-cols-1 row-cols-md-3 row-cols-lg-5 g-3 mb-4">
+    <div class="col">
+        <div class="card shadow-sm border-start border-4 border-primary h-100">
             <div class="card-body">
                 <div class="text-muted small">Total Jobs</div>
                 <h3 class="mb-0">@Model.Kpis.TotalJobs</h3>
@@ -17,8 +32,8 @@
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card shadow-sm border-start border-4 @(Model.Kpis.AverageMarginPercent >= Model.Kpis.TargetMarginPercent ? "border-success" : "border-warning")">
+    <div class="col">
+        <div class="card shadow-sm border-start border-4 @(Model.Kpis.AverageMarginPercent >= Model.Kpis.TargetMarginPercent ? "border-success" : "border-warning") h-100">
             <div class="card-body">
                 <div class="text-muted small">Avg Margin</div>
                 <h3 class="mb-0 @(Model.Kpis.AverageMarginPercent >= 0 ? "text-profit" : "text-loss")">@Model.Kpis.AverageMarginPercent.ToString("F1")%</h3>
@@ -26,21 +41,66 @@
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card shadow-sm border-start border-4 @(Model.Kpis.JobsOverBudget > 0 ? "border-danger" : "border-success")">
-            <div class="card-body">
-                <div class="text-muted small">Below Target Margin</div>
-                <h3 class="mb-0">@Model.Kpis.JobsOverBudget</h3>
-                <small class="text-muted">jobs below @Model.Kpis.TargetMarginPercent.ToString("F0")%</small>
+    <div class="col">
+        <a href="/Jobs?special=BelowTarget" class="text-decoration-none">
+            <div class="card shadow-sm border-start border-4 @(Model.Kpis.JobsOverBudget > 0 ? "border-danger" : "border-success") h-100">
+                <div class="card-body">
+                    <div class="text-muted small">Below Target Margin</div>
+                    <h3 class="mb-0 text-body">@Model.Kpis.JobsOverBudget</h3>
+                    <small class="text-muted">jobs below @Model.Kpis.TargetMarginPercent.ToString("F0")%</small>
+                </div>
             </div>
-        </div>
+        </a>
     </div>
-    <div class="col-md-3">
-        <div class="card shadow-sm border-start border-4 border-info">
+    <div class="col">
+        <div class="card shadow-sm border-start border-4 border-info h-100">
             <div class="card-body">
                 <div class="text-muted small">Revenue (Month)</div>
                 <h3 class="mb-0">@Model.Kpis.RevenueThisMonth.ToString("C0")</h3>
                 <small class="text-muted">completed this month</small>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card shadow-sm border-start border-4 border-success h-100">
+            <div class="card-body">
+                <div class="text-muted small">Total Revenue</div>
+                <h3 class="mb-0">@Model.Kpis.TotalRevenue.ToString("C0")</h3>
+                <small class="text-muted">all-time</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 6c. Work Pipeline Section -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">Work Pipeline</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <a href="/Jobs?statusFilter=Quoted" class="text-decoration-none">
+                            <div class="text-muted small">Quoted</div>
+                            <h3 class="mb-0 text-body">@Model.Kpis.QuotedCount</h3>
+                            <small class="text-muted">awaiting approval</small>
+                        </a>
+                    </div>
+                    <div class="col-md-4">
+                        <a href="/Jobs?statusFilter=InProgress" class="text-decoration-none">
+                            <div class="text-muted small">In Progress</div>
+                            <h3 class="mb-0 text-body">@Model.Kpis.InProgressCount</h3>
+                            <small class="text-muted">active jobs</small>
+                        </a>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-muted small">In-Progress Value</div>
+                        <h3 class="mb-0">@Model.Kpis.InProgressEstimatedValue.ToString("C0")</h3>
+                        <small class="text-muted">estimated revenue</small>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -55,7 +115,7 @@
 }
 else
 {
-    <!-- Estimated vs Actual Cost — full width -->
+    <!-- 6d. Estimated vs Actual Cost — full width -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="card shadow-sm">
@@ -69,7 +129,7 @@ else
         </div>
     </div>
 
-    <!-- Margin Trend — full width -->
+    <!-- 6e. Margin Trend — full width -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="card shadow-sm">
@@ -83,7 +143,7 @@ else
         </div>
     </div>
 
-    <!-- Estimating Accuracy + Customer Profitability — 50% each -->
+    <!-- 6f. Estimating Accuracy + 6g. Customer Profitability — 50% each -->
     <div class="row mb-4">
         <div class="col-md-6">
             <div class="card shadow-sm h-100">
@@ -103,7 +163,8 @@ else
                                 <tr>
                                     <th>Category</th>
                                     <th class="text-end">Avg Variance</th>
-                                    <th>Direction</th>
+                                    <th class="text-end">Avg $ Impact</th>
+                                    <th class="text-center">Direction</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -113,7 +174,17 @@ else
                                     <tr>
                                         <td>@cv.Category</td>
                                         <td class="text-end @varClass">@((cv.AverageVariancePercent >= 0 ? "+" : "") + cv.AverageVariancePercent.ToString("F1"))%</td>
-                                        <td><small class="text-muted">@cv.Direction</small></td>
+                                        <td class="text-end @varClass">@((cv.AverageDollarVariance >= 0 ? "+" : "") + cv.AverageDollarVariance.ToString("C0"))</td>
+                                        <td class="text-center">
+                                            @if (cv.Direction == "Underestimate")
+                                            {
+                                                <span class="text-loss" title="Underestimate (risk)">&#9650;</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-profit" title="Overestimate (safe)">&#9660;</span>
+                                            }
+                                        </td>
                                     </tr>
                                 }
                             </tbody>
@@ -134,14 +205,21 @@ else
         </div>
         <div class="col-md-6">
             <div class="card shadow-sm h-100">
-                <div class="card-header bg-dark text-white">
+                <div class="card-header bg-dark text-white d-flex align-items-center justify-content-between">
                     <h5 class="mb-0">Customer Profitability</h5>
+                    @if (Model.CustomerProfitability.Count > 0)
+                    {
+                        <div class="btn-group btn-group-sm">
+                            <button type="button" class="btn btn-outline-light active" onclick="sortCustomerTable('margin')" id="btnSortMargin">Margin %</button>
+                            <button type="button" class="btn btn-outline-light" onclick="sortCustomerTable('pl')" id="btnSortPL">P/L</button>
+                        </div>
+                    }
                 </div>
                 <div class="card-body p-0">
                     @if (Model.CustomerProfitability.Count > 0)
                     {
                         <div class="table-responsive">
-                            <table class="table table-sm table-hover mb-0">
+                            <table class="table table-sm table-hover mb-0" id="customerTable">
                                 <thead class="table-light">
                                     <tr>
                                         <th>Customer</th>
@@ -154,7 +232,10 @@ else
                                 <tbody>
                                     @foreach (var c in Model.CustomerProfitability)
                                     {
-                                        <tr>
+                                        var rowClass = c.MarginPercent < Model.Kpis.TargetMarginPercent
+                                            ? (c.MarginPercent < Model.Kpis.TargetMarginPercent - 3 ? "table-danger" : "table-warning")
+                                            : "";
+                                        <tr class="@rowClass" data-margin="@c.MarginPercent" data-pl="@c.ProfitLoss">
                                             <td>@c.CustomerName</td>
                                             <td class="text-center">@c.JobCount</td>
                                             <td class="text-end">@c.TotalRevenue.ToString("C0")</td>
@@ -184,27 +265,35 @@ else
     @if (Model.JobSummaries.Count > 0)
     {
         <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
         <script>
             var jobs = @Html.Raw(Model.JobSummariesJson);
             var targetMargin = @Model.Kpis.TargetMarginPercent;
 
-            // 7.2 — Profitability Summary Chart
+            // 6d — Estimated vs Actual Cost (sorted chronologically)
+            var chronoJobs = jobs.slice().sort(function(a, b) {
+                return new Date(a.CompletedAt) - new Date(b.CompletedAt);
+            });
             var profitCtx = document.getElementById('profitChart').getContext('2d');
             new Chart(profitCtx, {
                 type: 'bar',
                 data: {
-                    labels: jobs.map(function(j) { return j.JobNumber; }),
+                    labels: chronoJobs.map(function(j) { return j.JobNumber; }),
                     datasets: [
                         {
                             label: 'Estimated',
-                            data: jobs.map(function(j) { return j.TotalEstimatedCost; }),
+                            data: chronoJobs.map(function(j) { return j.TotalEstimatedCost; }),
                             backgroundColor: 'rgba(54, 162, 235, 0.7)'
                         },
                         {
                             label: 'Actual',
-                            data: jobs.map(function(j) { return j.TotalActualCost; }),
-                            backgroundColor: jobs.map(function(j) {
-                                return j.IsProfitable ? 'rgba(40, 167, 69, 0.7)' : 'rgba(220, 53, 69, 0.7)';
+                            data: chronoJobs.map(function(j) { return j.TotalActualCost; }),
+                            backgroundColor: chronoJobs.map(function(j) {
+                                if (j.TotalEstimatedCost <= 0) return 'rgba(40, 167, 69, 0.7)';
+                                var overPct = (j.TotalActualCost - j.TotalEstimatedCost) / j.TotalEstimatedCost * 100;
+                                if (overPct <= 0) return 'rgba(40, 167, 69, 0.7)';
+                                if (overPct <= 10) return 'rgba(255, 193, 7, 0.7)';
+                                return 'rgba(220, 53, 69, 0.7)';
                             })
                         }
                     ]
@@ -215,8 +304,12 @@ else
                         tooltip: {
                             callbacks: {
                                 afterLabel: function(ctx) {
-                                    var job = jobs[ctx.dataIndex];
-                                    return job.CustomerName + ' | Margin: ' + job.ActualMarginPercent.toFixed(1) + '%';
+                                    var job = chronoJobs[ctx.dataIndex];
+                                    var diff = job.TotalActualCost - job.TotalEstimatedCost;
+                                    var sign = diff >= 0 ? '+' : '-';
+                                    var label = sign + '$' + Math.abs(diff).toLocaleString(undefined, {maximumFractionDigits: 0});
+                                    label += diff >= 0 ? ' over' : ' under';
+                                    return job.CustomerName + ' | ' + label;
                                 }
                             }
                         }
@@ -224,13 +317,13 @@ else
                     scales: {
                         y: {
                             beginAtZero: true,
-                            ticks: { callback: function(v) { return '$' + v.toFixed(0); } }
+                            ticks: { callback: function(v) { return '$' + v.toLocaleString(); } }
                         }
                     }
                 }
             });
 
-            // 7.3 — Margin Drift Trend
+            // 6e — Margin Trend with target line
             var sortedJobs = jobs.slice().sort(function(a, b) {
                 return new Date(a.CompletedAt) - new Date(b.CompletedAt);
             });
@@ -261,14 +354,33 @@ else
                             callbacks: {
                                 title: function(ctx) {
                                     var job = sortedJobs[ctx[0].dataIndex];
-                                    return job.JobNumber + ' — ' + job.CustomerName;
+                                    return job.JobNumber + ' \u2014 ' + job.CustomerName;
                                 },
                                 label: function(ctx) {
                                     return 'Margin: ' + ctx.raw.toFixed(1) + '%';
                                 }
                             }
                         },
-                        annotation: undefined
+                        annotation: {
+                            annotations: {
+                                targetLine: {
+                                    type: 'line',
+                                    yMin: targetMargin,
+                                    yMax: targetMargin,
+                                    borderColor: '#ffc107',
+                                    borderWidth: 2,
+                                    borderDash: [6, 4],
+                                    label: {
+                                        display: true,
+                                        content: 'Target ' + targetMargin + '%',
+                                        position: 'end',
+                                        backgroundColor: 'rgba(255, 193, 7, 0.85)',
+                                        color: '#000',
+                                        font: { size: 11, weight: 'bold' }
+                                    }
+                                }
+                            }
+                        }
                     },
                     scales: {
                         y: {
@@ -277,6 +389,26 @@ else
                     }
                 }
             });
+
+            // 6g — Customer table sort
+            function sortCustomerTable(mode) {
+                var table = document.getElementById('customerTable');
+                var tbody = table.querySelector('tbody');
+                var rows = Array.from(tbody.querySelectorAll('tr'));
+
+                rows.sort(function(a, b) {
+                    if (mode === 'margin') {
+                        return parseFloat(b.dataset.margin) - parseFloat(a.dataset.margin);
+                    } else {
+                        return parseFloat(b.dataset.pl) - parseFloat(a.dataset.pl);
+                    }
+                });
+
+                rows.forEach(function(row) { tbody.appendChild(row); });
+
+                document.getElementById('btnSortMargin').classList.toggle('active', mode === 'margin');
+                document.getElementById('btnSortPL').classList.toggle('active', mode === 'pl');
+            }
         </script>
     }
 }

@@ -1,4 +1,4 @@
-@page "{jobId:guid}"
+@page "{slug}"
 @model MetalMetrics.Web.Pages.Jobs.Quote.AIModel
 @{
     ViewData["Title"] = $"AI Quote — {Model.JobNumber}";
@@ -14,7 +14,7 @@
                 <h5 class="mb-0">Describe the Fabrication Work</h5>
             </div>
             <div class="card-body">
-                <form method="post" asp-route-jobId="@Model.JobId" id="aiQuoteForm">
+                <form method="post" asp-route-slug="@Model.JobSlug" id="aiQuoteForm">
                     <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
                     <div class="row mb-3">
@@ -91,8 +91,8 @@
                         <span id="submitText">Generate AI Quote</span>
                         <span id="submitSpinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
                     </button>
-                    <a asp-page="/Jobs/Quote/Create" asp-route-jobId="@Model.JobId" class="btn btn-outline-secondary ms-2">Quote Manually</a>
-                    <a asp-page="/Jobs/Details" asp-route-id="@Model.JobId" class="btn btn-outline-secondary ms-2">Cancel</a>
+                    <a asp-page="/Jobs/Quote/Create" asp-route-slug="@Model.JobSlug" class="btn btn-outline-secondary ms-2">Quote Manually</a>
+                    <a asp-page="/Jobs/Details" asp-route-slug="@Model.JobSlug" class="btn btn-outline-secondary ms-2">Cancel</a>
                 </form>
             </div>
         </div>

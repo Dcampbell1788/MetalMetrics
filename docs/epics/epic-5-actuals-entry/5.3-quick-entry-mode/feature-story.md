@@ -1,101 +1,60 @@
-# Feature 5.3 — Quick Entry Mode (Journeyman Optimized)
+# Feature 5.3 — Quick Entry Mode
 
-**Epic:** Epic 5 — Actuals Entry (Post-Job Tracking)
-**Status:** Pending
-**Priority:** Medium
-**Estimated Effort:** Small
+**Epic:** Epic 5 — Actuals Entry
+**Status:** Complete
 
 ---
 
 ## User Story
 
 **As a** journeyman on the shop floor,
-**I want** a simplified, mobile-friendly form to quickly log my actual hours and material usage,
-**so that** I can record job costs without navigating a complex interface on my phone.
+**I want** a simplified mobile-friendly form to quickly log hours and material,
+**so that** I can record costs without navigating a complex interface.
 
 ---
 
-## Acceptance Criteria
+## Implementation
 
-- [ ] Quick entry page accessible at `/Jobs/{jobId}/Actuals/Quick`
-- [ ] Simplified form with only essential fields: Labor Hours, Material Cost, Machine Hours, Notes
-- [ ] Rates auto-filled from `TenantSettings` defaults (not editable in quick mode)
-- [ ] Large input fields and buttons optimized for mobile/touch
-- [ ] Minimal UI — no side-by-side comparison, no variance display
-- [ ] Save button creates/updates `JobActuals` with auto-filled rates
-- [ ] Success confirmation with option to enter actuals for another job
-- [ ] Access: All roles that can enter actuals (Admin, Owner, PM, Foreman, Journeyman)
+### Page: `/Jobs/Actuals/Quick/{slug}` (`Web/Pages/Jobs/Actuals/Quick.cshtml.cs`)
 
----
+**Authorization:** `[Authorize(Policy = "CanEnterActuals")]`
 
-## Page Layout (Mobile-First)
+### Simplified Form Fields
 
-```
-┌───────────────────────────┐
-│  Quick Entry              │
-│  Job #JOB-0042            │
-│  ABC Fabrication          │
-│                           │
-│  Labor Hours              │
-│  ┌───────────────────┐    │
-│  │ 5.0               │    │
-│  └───────────────────┘    │
-│                           │
-│  Material Cost ($)        │
-│  ┌───────────────────┐    │
-│  │ 310.00             │    │
-│  └───────────────────┘    │
-│                           │
-│  Machine Hours            │
-│  ┌───────────────────┐    │
-│  │ 1.5               │    │
-│  └───────────────────┘    │
-│                           │
-│  Notes                    │
-│  ┌───────────────────┐    │
-│  │                   │    │
-│  │                   │    │
-│  └───────────────────┘    │
-│                           │
-│  ┌───────────────────┐    │
-│  │    SAVE ACTUALS   │    │
-│  └───────────────────┘    │
-└───────────────────────────┘
-```
+Only 3 cost fields + notes:
+- Labor Hours
+- Material Cost ($)
+- Machine Hours
+- Notes
 
----
+### Auto-Filled Values (from TenantSettings or JobEstimate)
 
-## Technical Notes
+- `LaborRate` = from estimate, or TenantSettings.DefaultLaborRate
+- `MachineRate` = from estimate, or TenantSettings.DefaultMachineRate
+- `OverheadPercent` = from estimate, or TenantSettings.DefaultOverheadPercent
+- `ActualRevenue` = from estimate QuotePrice (if available)
 
-- Page: `Pages/Jobs/Actuals/Quick.cshtml` + `Quick.cshtml.cs`
-- Auto-fill from `TenantSettings`:
-  - `LaborRate` = `DefaultLaborRate`
-  - `MachineRate` = `DefaultMachineRate`
-  - `OverheadPercent` = `DefaultOverheadPercent`
-- Reuses `IActualsService.SaveActualsAsync()` from Feature 5.2
-- Mobile CSS considerations:
-  - Large font sizes for inputs (16px+ to prevent iOS zoom)
-  - Full-width inputs and buttons
-  - Minimal padding/margins
-  - Number input type for numeric fields (shows numeric keyboard)
-- Consider linking to this from the job list for quick access
+### OnPostAsync Flow
 
----
+1. Build `JobActuals` from simplified form + auto-filled rates
+2. Calculate totals via `ActualsService.CalculateTotals()`
+3. Set `EnteredBy`
+4. Upsert via `ActualsService.SaveAsync()`
+5. Redirect to Job Details
 
-## Dependencies
+### Mobile Considerations
 
-- Feature 5.1 (Job Actuals Entity)
-- Feature 3.4 (Tenant Settings — for auto-filling rates)
-- Feature 2.5 (Role-Based Authorization)
+- Large input fields
+- Full-width buttons
+- Numeric input types (shows numeric keyboard on mobile)
+- Minimal UI — no side-by-side comparison
 
 ---
 
 ## Definition of Done
 
-- [ ] Quick entry page renders with simplified form
-- [ ] Rates auto-filled from tenant settings
-- [ ] Save creates/updates `JobActuals` correctly
-- [ ] Mobile-responsive layout works on phone viewport
-- [ ] Input fields are touch-friendly (large targets)
-- [ ] Role-based access enforced
-- [ ] Manual smoke test on mobile viewport
+- [x] Simplified form with 3 cost fields + notes
+- [x] Rates auto-filled from estimate/TenantSettings
+- [x] Save creates/updates JobActuals correctly
+- [x] Mobile-friendly layout
+- [x] Role-based access enforced

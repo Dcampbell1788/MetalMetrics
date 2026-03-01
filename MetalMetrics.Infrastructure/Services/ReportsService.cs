@@ -41,6 +41,7 @@ public class ReportsService : IReportsService
             {
                 JobId = j.Id,
                 JobNumber = j.JobNumber,
+                Slug = j.Slug,
                 CustomerName = j.CustomerName,
                 TotalEstimatedCost = j.Estimate!.TotalEstimatedCost,
                 TotalActualCost = j.Actuals.TotalActualCost,

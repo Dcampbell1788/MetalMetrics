@@ -1,80 +1,82 @@
 # Feature 7.3 — Margin Drift Trend
 
 **Epic:** Epic 7 — Dashboard & Reporting
-**Status:** Pending
-**Priority:** Medium
-**Estimated Effort:** Medium
+**Status:** Complete
 
 ---
 
 ## User Story
 
 **As a** company owner,
-**I want** a line chart showing my actual margin percentage over time,
-**so that** I can see if my quoting accuracy is improving or degrading and take corrective action.
+**I want** a line chart showing actual margin over time with my target margin line,
+**so that** I can see if quoting accuracy is improving or degrading.
 
 ---
 
-## Acceptance Criteria
+## Implementation
 
-- [ ] Line chart displayed on the Dashboard page
-- [ ] X-axis: job completion date (chronological)
-- [ ] Y-axis: actual margin percentage
-- [ ] Horizontal reference line at the target margin percentage (from `TenantSettings`)
-- [ ] Data points represent individual completed jobs
-- [ ] Trend line or moving average to show the overall direction
-- [ ] Tooltips show job number, customer, and margin on hover
-- [ ] Chart clearly shows when margin is above/below target
-- [ ] Uses Chart.js
+### Chart Type
 
----
+Chart.js v4 line chart with `chartjs-plugin-annotation` for the target line.
 
-## Page Layout
+### CDN Scripts
 
-```
-┌─ Margin Trend Over Time ───────────────────────────────────────┐
-│                                                                 │
-│  30% │                              *                           │
-│      │            *     *                  *                    │
-│  20% │ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─  Target (20%) │
-│      │     *                    *                    *          │
-│  10% │                *                                         │
-│      │  *                                       *               │
-│   0% │─────────────────────────────────────────────────────────│
-│      Jan    Feb    Mar    Apr    May    Jun    Jul              │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
+```html
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
 ```
 
----
+### Data
 
-## Technical Notes
+Same `JobSummaryDto` data as the bar chart, sorted chronologically by `CompletedAt`.
 
-- Chart type: Chart.js line chart with annotation plugin for the target line
-- Chart.js annotation plugin: `chartjs-plugin-annotation` via CDN
-- Data source: completed jobs ordered by `CompletedAt`, with `ActualMarginPercent`
-- Target line: horizontal line at `TenantSettings.TargetMarginPercent`
-- Optional: add a second dataset for a rolling average (e.g., 5-job moving average)
-- Color data points: green if above target, red if below
-- Consider `pointBackgroundColor` callback for per-point coloring
-- If few data points, show individual markers prominently
+### Chart Features
 
----
+- **X-axis:** Job completion dates (formatted via `toLocaleDateString()`)
+- **Y-axis:** Actual margin percentage
+- **Data points:** Colored green (above target) or red (below target) via `pointBackgroundColor` callback
+- **Point radius:** 6px for prominent visibility
+- **Line tension:** 0.3 for smooth curves
 
-## Dependencies
+### Target Margin Annotation Line
 
-- Feature 7.1 (Main Dashboard)
-- Feature 6.1 (Profitability Service — margin data)
-- Feature 3.4 (Tenant Settings — target margin)
-- Feature 5.1 (Job Actuals — actual margin values)
+Dashed gold horizontal line at `TargetMarginPercent`:
+```javascript
+annotation: {
+    annotations: {
+        targetLine: {
+            type: 'line',
+            yMin: targetMargin,
+            yMax: targetMargin,
+            borderColor: '#ffc107',
+            borderWidth: 2,
+            borderDash: [6, 4],
+            label: {
+                display: true,
+                content: 'Target ' + targetMargin + '%',
+                position: 'end',
+                backgroundColor: 'rgba(255, 193, 7, 0.85)',
+                color: '#000'
+            }
+        }
+    }
+}
+```
+
+### Tooltips
+
+Show job number, customer name, and margin percentage:
+```
+JOB-0042 — ABC Fabrication
+Margin: 18.3%
+```
 
 ---
 
 ## Definition of Done
 
-- [ ] Line chart renders with margin data over time
-- [ ] Target margin line displayed
-- [ ] Data points colored based on above/below target
-- [ ] Tooltips show job details
-- [ ] Chart handles varying numbers of data points
-- [ ] Manual smoke test with multiple completed jobs
+- [x] Line chart renders with margin data over time
+- [x] Dashed gold target margin line with label via annotation plugin
+- [x] Data points colored green/red based on above/below target
+- [x] Tooltips show job details
+- [x] Chart handles varying data points

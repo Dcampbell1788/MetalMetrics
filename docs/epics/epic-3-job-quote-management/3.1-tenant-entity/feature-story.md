@@ -1,58 +1,47 @@
 # Feature 3.1 — Tenant Entity
 
-**Epic:** Epic 3 — Job & Quote Management (Core Data)
-**Status:** Pending
-**Priority:** Critical
-**Estimated Effort:** Small
+**Epic:** Epic 3 — Job & Quote Management
+**Status:** Complete
 
 ---
 
 ## User Story
 
 **As a** developer,
-**I want** a `Tenant` entity that represents a company in the system,
-**so that** all data can be scoped to a specific company and users are correctly associated with their organization.
+**I want** a `Tenant` entity that represents a company,
+**so that** all data is scoped to a specific company.
 
 ---
 
-## Acceptance Criteria
+## Implementation
 
-- [ ] `Tenant` entity created in `MetalMetrics.Core` inheriting from `BaseEntity`
-- [ ] `Tenant` includes: `CompanyName` (string, required)
-- [ ] One-to-many relationship: `Tenant` → `AppUser` (a tenant has many users)
-- [ ] One-to-many relationship: `Tenant` → `Job` (a tenant has many jobs)
-- [ ] One-to-one relationship: `Tenant` → `TenantSettings`
-- [ ] EF Core configuration via Fluent API (entity config class)
-- [ ] Migration created and applied cleanly
-- [ ] `CompanyName` is required and has a max length constraint
+### Tenant Entity (`Core/Entities/Tenant.cs`)
 
----
+```csharp
+public class Tenant : BaseEntity
+{
+    public string CompanyName { get; set; } = string.Empty;
+    public ICollection<AppUser> Users { get; set; } = new List<AppUser>();
+    public ICollection<Job> Jobs { get; set; } = new List<Job>();
+    public TenantSettings? Settings { get; set; }
+}
+```
 
-## Technical Notes
+### Relationships (AppDbContext OnModelCreating)
 
-- Entity location: `MetalMetrics.Core/Entities/Tenant.cs`
-- EF Config location: `MetalMetrics.Infrastructure/Data/Configurations/TenantConfiguration.cs`
-- `Tenant` inherits `Id`, `TenantId`, `CreatedAt`, `UpdatedAt` from `BaseEntity`
-  - Note: For the `Tenant` entity itself, `TenantId` can equal `Id` (self-referencing)
-- Navigation properties:
-  ```csharp
-  public ICollection<AppUser> Users { get; set; }
-  public ICollection<Job> Jobs { get; set; }
-  public TenantSettings Settings { get; set; }
-  ```
+- `Tenant` -> `TenantSettings`: One-to-one, cascade delete
+- `Tenant` -> `AppUser`: One-to-many (via AppUser.TenantId)
+- `Tenant` -> `Job`: One-to-many (via Job.TenantId)
 
----
+### Note on TenantId
 
-## Dependencies
-
-- Feature 1.2 (EF Core + SQLite Setup)
-- Feature 1.3 (Base Entity Model)
+For the `Tenant` entity itself, `TenantId` is set to equal `Id` (self-referencing) by the `SaveChangesAsync` auto-assign logic.
 
 ---
 
 ## Definition of Done
 
-- [ ] `Tenant` entity created with correct properties and relationships
-- [ ] Fluent API configuration applied
-- [ ] Migration created and database updated successfully
-- [ ] `CompanyName` validation enforced at the database level
+- [x] Tenant entity with CompanyName and navigation properties
+- [x] One-to-one with TenantSettings (cascade delete)
+- [x] One-to-many with AppUser and Job
+- [x] Migration applied

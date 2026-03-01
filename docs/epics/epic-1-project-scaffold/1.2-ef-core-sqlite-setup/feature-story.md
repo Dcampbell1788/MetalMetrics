@@ -1,60 +1,87 @@
 # Feature 1.2 — EF Core + SQLite Setup
 
 **Epic:** Epic 1 — Project Scaffold & Infrastructure
-**Status:** Pending
-**Priority:** Critical (Foundation)
-**Estimated Effort:** Medium
+**Status:** Complete
 
 ---
 
 ## User Story
 
 **As a** developer,
-**I want** Entity Framework Core configured with SQLite and multi-tenant query filtering,
-**so that** all data access is tenant-scoped by default and the database is ready for entity development.
+**I want** Entity Framework Core configured with SQLite and multi-tenant support,
+**so that** all data access is tenant-scoped and the database requires zero setup.
 
 ---
 
-## Acceptance Criteria
+## Implementation
 
-- [ ] EF Core SQLite NuGet packages installed in `MetalMetrics.Infrastructure`
-- [ ] `AppDbContext` class created with `DbSet` properties for core entities
-- [ ] Global query filter on `AppDbContext` automatically scopes all queries by `TenantId`
-- [ ] `ITenantProvider` interface defined in `MetalMetrics.Core`
-- [ ] `TenantProvider` implementation created in `MetalMetrics.Infrastructure` (reads tenant from authenticated user claims)
-- [ ] Initial EF Core migration created and applies cleanly
-- [ ] Database seeding script creates default/demo data
-- [ ] Connection string configured in `appsettings.json` (SQLite file path)
-- [ ] `AppDbContext` registered in DI container in `Program.cs`
+### AppDbContext (`Infrastructure/Data/AppDbContext.cs`)
 
----
+Extends `IdentityDbContext<AppUser, IdentityRole, string>`.
 
-## Technical Notes
+**DbSets:** `Tenants`, `TenantSettings`, `Jobs`, `JobEstimates`, `JobActuals`, `JobAssignments`, `JobTimeEntries`, `JobNotes`
 
-- NuGet packages: `Microsoft.EntityFrameworkCore.Sqlite`, `Microsoft.EntityFrameworkCore.Tools`, `Microsoft.EntityFrameworkCore.Design`
-- Global query filter pattern:
-  ```csharp
-  modelBuilder.Entity<T>().HasQueryFilter(e => e.TenantId == _tenantProvider.TenantId);
-  ```
-- SQLite database file stored in project root or `App_Data` folder
-- Use `IDesignTimeDbContextFactory` for migrations support
-- Consider `HasData()` for seed data or a separate `DbSeeder` service
+**SaveChangesAsync override behavior:**
+1. New `BaseEntity` with empty `TenantId` -> auto-set from `ITenantProvider`
+2. New `IAuditable` -> `CreatedAt = DateTime.UtcNow`
+3. Modified `IAuditable` -> `UpdatedAt = DateTime.UtcNow`
 
----
+**OnModelCreating:**
+- Cascade deletes: `Tenant.Settings`, `Job.Estimate`, `Job.Actuals`, `Job.Assignments`, `Job.TimeEntries`, `Job.Notes`
+- Unique indexes: `(TenantId, JobNumber)`, `(TenantId, Slug)` on Job entity
 
-## Dependencies
+### ITenantProvider (`Core/Interfaces/ITenantProvider.cs`)
 
-- Feature 1.1 (Solution & Project Structure)
-- Feature 1.3 (Base Entity Model — for `TenantId` on `BaseEntity`)
+```csharp
+public interface ITenantProvider
+{
+    Guid TenantId { get; }
+}
+```
+
+### TenantProvider (`Infrastructure/Services/TenantProvider.cs`)
+
+Reads `TenantId` claim from `HttpContext.User`. Returns `Guid.Empty` if unauthenticated.
+
+### DesignTimeDbContextFactory (`Infrastructure/Data/DesignTimeDbContextFactory.cs`)
+
+Enables `dotnet ef` commands with a `StubTenantProvider` that returns `Guid.Empty`.
+
+### Connection String (`Web/appsettings.json`)
+
+```json
+{ "ConnectionStrings": { "DefaultConnection": "Data Source=metalmetrics.db" } }
+```
+
+### Auto-Startup (`Web/Program.cs`)
+
+```csharp
+using var scope = app.Services.CreateScope();
+var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+context.Database.Migrate();  // Auto-apply all migrations
+```
+
+### SQLite Limitation
+
+SQLite cannot apply aggregate `Sum()` on `decimal` expressions. Must materialize with `ToListAsync()` first, then use LINQ `.Sum()` client-side.
+
+### Migrations (7 total, auto-applied on startup)
+
+1. `InitialIdentityAndTenant` - Identity + Tenant + AppUser
+2. `AddTenantSettings` - TenantSettings
+3. `AddJobAndJobEstimate` - Job + JobEstimate
+4. `AddJobActuals` - JobActuals
+5. `AddJobAssignmentTimeEntryNotes` - JobAssignment, JobTimeEntry, JobNote
+6. `AddTimeEntryUserNavigation` - FK for TimeEntry.User
+7. `AddJobSlug` - Job.Slug column
 
 ---
 
 ## Definition of Done
 
-- [ ] EF Core packages installed and configured
-- [ ] `AppDbContext` with global tenant filter working
-- [ ] `ITenantProvider` interface and implementation created
-- [ ] Initial migration created successfully
-- [ ] Database can be created/updated via `dotnet ef database update`
-- [ ] Connection string externalized to `appsettings.json`
-- [ ] At least 1 unit test for tenant filtering logic
+- [x] EF Core SQLite packages installed and configured
+- [x] AppDbContext with auto-audit and auto-TenantId
+- [x] ITenantProvider interface and TenantProvider implementation
+- [x] DesignTimeDbContextFactory for migrations
+- [x] 7 migrations created and auto-applied
+- [x] 3 unit tests for AppDbContext behavior

@@ -1,4 +1,4 @@
-@page "{id:guid}"
+@page "{slug}"
 @model MetalMetrics.Web.Pages.Jobs.AssignModel
 @{
     ViewData["Title"] = $"Assign Team — {Model.Job.JobNumber}";
@@ -6,7 +6,7 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h2>Assign Team &mdash; @Model.Job.JobNumber</h2>
-    <a asp-page="Details" asp-route-id="@Model.Job.Id" class="btn btn-outline-secondary">Back to Job</a>
+    <a asp-page="Details" asp-route-slug="@Model.Job.Slug" class="btn btn-outline-secondary">Back to Job</a>
 </div>
 
 <div class="row">
@@ -39,9 +39,12 @@
                                     <td><span class="badge bg-secondary">@a.User?.Role</span></td>
                                     <td>@a.CreatedAt.ToString("MMM dd, yyyy")</td>
                                     <td>
-                                        <form method="post" asp-page-handler="Remove" asp-route-id="@Model.Job.Id" asp-route-userId="@a.UserId">
-                                            <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
-                                        </form>
+                                        @if (a.User != null && Model.RemovableRoles.Contains(a.User.Role))
+                                        {
+                                            <form method="post" asp-page-handler="Remove" asp-route-slug="@Model.Job.Slug" asp-route-userId="@a.UserId">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+                                            </form>
+                                        }
                                     </td>
                                 </tr>
                             }
@@ -64,7 +67,7 @@
                 }
                 else
                 {
-                    <form method="post" asp-page-handler="Assign" asp-route-id="@Model.Job.Id">
+                    <form method="post" asp-page-handler="Assign" asp-route-slug="@Model.Job.Slug">
                         <div class="mb-3">
                             <label class="form-label">Select Team Member</label>
                             <select asp-for="SelectedUserId" class="form-select">

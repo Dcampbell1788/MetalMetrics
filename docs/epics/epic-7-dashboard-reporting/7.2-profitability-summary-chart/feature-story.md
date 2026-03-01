@@ -1,72 +1,82 @@
-# Feature 7.2 — Profitability Summary Chart
+# Feature 7.2 — Profitability Summary Chart (Estimated vs Actual)
 
 **Epic:** Epic 7 — Dashboard & Reporting
-**Status:** Pending
-**Priority:** High
-**Estimated Effort:** Medium
+**Status:** Complete
 
 ---
 
 ## User Story
 
 **As a** company owner,
-**I want** a bar chart showing estimated vs actual costs for all completed jobs,
-**so that** I can visually identify which jobs were profitable and which lost money.
+**I want** a bar chart showing estimated vs actual costs for completed jobs,
+**so that** I can visually identify overruns and their severity.
 
 ---
 
-## Acceptance Criteria
+## Implementation
 
-- [ ] Bar chart displayed on the Dashboard page (below KPI cards)
-- [ ] Each completed job shown as a grouped bar: Estimated Cost vs Actual Cost
-- [ ] Color coding: green bars for profitable jobs, red bars for jobs at a loss
-- [ ] Chart is sortable by: Date (default), Margin %, Customer Name
-- [ ] Hovering/clicking a bar shows job details (tooltip or link)
-- [ ] Chart handles varying numbers of jobs gracefully (scrollable if many)
-- [ ] Uses Chart.js via CDN (no npm build required)
-- [ ] Chart data is tenant-scoped
+### Chart Type
 
----
+Chart.js v4 grouped bar chart via CDN. Two bars per job: Estimated (blue) + Actual (color-coded).
 
-## Technical Notes
+### Data Source
 
-- Chart library: Chart.js v4 via CDN (`<script src="https://cdn.jsdelivr.net/npm/chart.js">`)
-- Chart type: grouped bar chart (two bars per job: estimated, actual)
-- Data source: `IDashboardService` returns a list of `JobSummaryDto`:
-  ```csharp
-  public class JobSummaryDto
-  {
-      public string JobNumber { get; set; }
-      public string CustomerName { get; set; }
-      public decimal TotalEstimatedCost { get; set; }
-      public decimal TotalActualCost { get; set; }
-      public decimal ActualMarginPercent { get; set; }
-      public DateTime CompletedAt { get; set; }
-      public bool IsProfitable { get; set; }
-  }
-  ```
-- Serialize data to JSON and pass to Chart.js via `<script>` block
-- Sorting: use JavaScript to re-render chart with sorted data, or server-side with query parameter
-- Consider limiting to the most recent 20-30 jobs for readability
-- Color logic: `backgroundColor` set conditionally based on `IsProfitable`
+`IDashboardService.GetJobSummariesAsync(limit: 20)` returns completed jobs with estimates and actuals.
 
----
+### JobSummaryDto (`Core/DTOs/JobSummaryDto.cs`)
 
-## Dependencies
+```csharp
+public class JobSummaryDto
+{
+    public Guid JobId { get; set; }
+    public string JobNumber { get; set; }
+    public string Slug { get; set; }
+    public string CustomerName { get; set; }
+    public decimal TotalEstimatedCost { get; set; }
+    public decimal TotalActualCost { get; set; }
+    public decimal ActualMarginPercent { get; set; }
+    public DateTime CompletedAt { get; set; }
+    public bool IsProfitable { get; set; }
+    public decimal QuotePrice { get; set; }
+    public string Status { get; set; }
+    public decimal ActualRevenue { get; set; }
+}
+```
 
-- Feature 7.1 (Main Dashboard — chart renders on this page)
-- Feature 6.1 (Profitability Service — for profit/loss data)
-- Feature 3.2 (Job Entity)
-- Feature 5.1 (Job Actuals)
+### Sorting
+
+Data sorted **chronologically** by `CompletedAt` before rendering (client-side sort).
+
+### Color Coding (Actual bars)
+
+Based on overage percentage: `(ActualCost - EstimatedCost) / EstimatedCost * 100`
+- **Green** (`rgba(40, 167, 69, 0.7)`) — under budget or at budget
+- **Orange** (`rgba(255, 193, 7, 0.7)`) — 0-10% over budget
+- **Red** (`rgba(220, 53, 69, 0.7)`) — >10% over budget
+
+### Tooltips
+
+Show dollar variance on hover:
+```
+CustomerName | +$1,234 over   (or)   -$567 under
+```
+
+### Chart.js Configuration
+
+```javascript
+var chronoJobs = jobs.slice().sort(function(a, b) {
+    return new Date(a.CompletedAt) - new Date(b.CompletedAt);
+});
+// ... grouped bar chart with conditional backgroundColor
+```
 
 ---
 
 ## Definition of Done
 
-- [ ] Chart renders on the dashboard with correct data
-- [ ] Estimated vs Actual bars display for each completed job
-- [ ] Color coding correctly indicates profit/loss
-- [ ] Sorting works by date, margin, and customer
-- [ ] Tooltips show job details on hover
-- [ ] Chart.js loads via CDN without build tooling
-- [ ] Manual smoke test with multiple jobs
+- [x] Grouped bar chart renders on dashboard
+- [x] Sorted chronologically by completion date
+- [x] 3-tier color coding (green/orange/red) for actual bars
+- [x] Dollar variance in tooltips
+- [x] Chart.js v4 via CDN
+- [x] Limited to 20 most recent completed jobs

@@ -110,6 +110,7 @@ public class RegisterModel : PageModel
 
             await _userManager.AddToRoleAsync(user, AppRole.Admin.ToString());
             await _userManager.AddClaimAsync(user, new Claim("TenantId", tenant.Id.ToString()));
+            await _userManager.AddClaimAsync(user, new Claim("FullName", user.FullName));
 
             await transaction.CommitAsync();
 

@@ -62,9 +62,11 @@ public class AppDbContext : IdentityDbContext<AppUser, IdentityRole, string>
         modelBuilder.Entity<Job>(entity =>
         {
             entity.Property(j => j.JobNumber).IsRequired().HasMaxLength(20);
+            entity.Property(j => j.Slug).IsRequired().HasMaxLength(8);
             entity.Property(j => j.CustomerName).IsRequired().HasMaxLength(200);
             entity.Property(j => j.Description).HasMaxLength(2000);
             entity.HasIndex(j => new { j.TenantId, j.JobNumber }).IsUnique();
+            entity.HasIndex(j => new { j.TenantId, j.Slug }).IsUnique();
 
             entity.HasOne(j => j.Tenant)
                 .WithMany(t => t.Jobs)
@@ -165,8 +167,10 @@ public class AppDbContext : IdentityDbContext<AppUser, IdentityRole, string>
         {
             if (entry.State == EntityState.Added)
             {
-                entry.Entity.CreatedAt = now;
-                entry.Entity.UpdatedAt = now;
+                if (entry.Entity.CreatedAt == default)
+                    entry.Entity.CreatedAt = now;
+                if (entry.Entity.UpdatedAt == default)
+                    entry.Entity.UpdatedAt = now;
             }
             else if (entry.State == EntityState.Modified)
             {

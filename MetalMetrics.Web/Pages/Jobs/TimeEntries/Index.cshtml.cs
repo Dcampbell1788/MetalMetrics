@@ -55,19 +55,19 @@ public class IndexModel : PageModel
         public string? Notes { get; set; }
     }
 
-    public async Task<IActionResult> OnGetAsync(Guid jobId)
+    public async Task<IActionResult> OnGetAsync(string slug)
     {
-        var job = await _jobService.GetByIdAsync(jobId);
+        var job = await _jobService.GetBySlugAsync(slug);
         if (job == null) return NotFound();
 
         var currentUser = await _userManager.GetUserAsync(User);
         if (currentUser == null) return Forbid();
 
-        if (!await CanAccessJobAsync(jobId, currentUser))
+        if (!await CanAccessJobAsync(job.Id, currentUser))
             return Forbid();
 
         Job = job;
-        await LoadEntriesAsync(jobId, currentUser);
+        await LoadEntriesAsync(job.Id, currentUser);
 
         // Foreman and Journeyman can log time on active jobs only
         CanLogTime = (currentUser.Role == AppRole.Foreman || currentUser.Role == AppRole.Journeyman)
@@ -77,9 +77,9 @@ public class IndexModel : PageModel
         return Page();
     }
 
-    public async Task<IActionResult> OnPostAsync(Guid jobId)
+    public async Task<IActionResult> OnPostAsync(string slug)
     {
-        var job = await _jobService.GetByIdAsync(jobId);
+        var job = await _jobService.GetBySlugAsync(slug);
         if (job == null) return NotFound();
 
         var currentUser = await _userManager.GetUserAsync(User);
@@ -88,19 +88,19 @@ public class IndexModel : PageModel
         if (currentUser.Role != AppRole.Foreman && currentUser.Role != AppRole.Journeyman)
         {
             TempData["Error"] = "Only Foremen and Journeymen can log time.";
-            return RedirectToPage(new { jobId });
+            return RedirectToPage(new { slug });
         }
 
         if (job.Status == JobStatus.Quoted || job.Status == JobStatus.Invoiced)
         {
             TempData["Error"] = "Time cannot be logged on jobs that are Quoted or Invoiced.";
-            return RedirectToPage(new { jobId });
+            return RedirectToPage(new { slug });
         }
 
         if (!ModelState.IsValid)
         {
             Job = job;
-            await LoadEntriesAsync(jobId, currentUser);
+            await LoadEntriesAsync(job.Id, currentUser);
             CanLogTime = true;
             CurrentUserId = currentUser.Id;
             return Page();
@@ -108,7 +108,7 @@ public class IndexModel : PageModel
 
         var entry = new JobTimeEntry
         {
-            JobId = jobId,
+            JobId = job.Id,
             UserId = currentUser.Id,
             TenantId = currentUser.TenantId,
             HoursWorked = Input.HoursWorked,
@@ -118,10 +118,10 @@ public class IndexModel : PageModel
 
         await _timeEntryService.CreateAsync(entry);
         TempData["Success"] = "Time entry logged.";
-        return RedirectToPage(new { jobId });
+        return RedirectToPage(new { slug });
     }
 
-    public async Task<IActionResult> OnPostDeleteAsync(Guid jobId, Guid entryId)
+    public async Task<IActionResult> OnPostDeleteAsync(string slug, Guid entryId)
     {
         var currentUser = await _userManager.GetUserAsync(User);
         if (currentUser == null) return Forbid();
@@ -133,7 +133,7 @@ public class IndexModel : PageModel
             TempData["Success"] = "Time entry deleted.";
         }
 
-        return RedirectToPage(new { jobId });
+        return RedirectToPage(new { slug });
     }
 
     private async Task LoadEntriesAsync(Guid jobId, AppUser currentUser)

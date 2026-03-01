@@ -4,6 +4,7 @@ public class JobSummaryDto
 {
     public Guid JobId { get; set; }
     public string JobNumber { get; set; } = string.Empty;
+    public string Slug { get; set; } = string.Empty;
     public string CustomerName { get; set; } = string.Empty;
     public decimal TotalEstimatedCost { get; set; }
     public decimal TotalActualCost { get; set; }
@@ -12,4 +13,5 @@ public class JobSummaryDto
     public bool IsProfitable { get; set; }
     public decimal QuotePrice { get; set; }
     public string Status { get; set; } = string.Empty;
+    public decimal ActualRevenue { get; set; }
 }

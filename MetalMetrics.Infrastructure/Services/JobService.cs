@@ -51,6 +51,24 @@ public class JobService : IJobService
             .FirstOrDefaultAsync(j => j.Id == id && j.TenantId == tenantId);
     }
 
+    public async Task<Job?> GetByJobNumberAsync(string jobNumber)
+    {
+        var tenantId = _tenantProvider.TenantId;
+        return await _db.Jobs
+            .Include(j => j.Estimate)
+            .Include(j => j.Actuals)
+            .FirstOrDefaultAsync(j => j.JobNumber == jobNumber && j.TenantId == tenantId);
+    }
+
+    public async Task<Job?> GetBySlugAsync(string slug)
+    {
+        var tenantId = _tenantProvider.TenantId;
+        return await _db.Jobs
+            .Include(j => j.Estimate)
+            .Include(j => j.Actuals)
+            .FirstOrDefaultAsync(j => j.Slug == slug && j.TenantId == tenantId);
+    }
+
     public async Task<Job> CreateAsync(string customerName, string? description)
     {
         var tenantId = _tenantProvider.TenantId;
@@ -61,6 +79,7 @@ public class JobService : IJobService
             CustomerName = customerName,
             Description = description,
             JobNumber = nextNumber,
+            Slug = GenerateSlug(),
             TenantId = tenantId
         };
 
@@ -73,6 +92,14 @@ public class JobService : IJobService
     {
         _db.Jobs.Update(job);
         await _db.SaveChangesAsync();
+    }
+
+    private static string GenerateSlug()
+    {
+        const string chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+        return new string(Enumerable.Range(0, 8)
+            .Select(_ => chars[Random.Shared.Next(chars.Length)])
+            .ToArray());
     }
 
     private async Task<string> GetNextJobNumberAsync(Guid tenantId)

@@ -1,4 +1,4 @@
-@page "{jobId:guid}"
+@page "{slug}"
 @model MetalMetrics.Web.Pages.Jobs.Actuals.QuickModel
 @{
     ViewData["Title"] = $"Quick Entry — {Model.Job.JobNumber}";
@@ -12,7 +12,7 @@
                 <small>@Model.Job.JobNumber — @Model.Job.CustomerName</small>
             </div>
             <div class="card-body">
-                <form method="post" asp-route-jobId="@Model.Job.Id">
+                <form method="post" asp-route-slug="@Model.Job.Slug">
                     <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
                     <div class="mb-4">
@@ -43,7 +43,7 @@
 
                     <div class="d-grid gap-2">
                         <button type="submit" class="btn btn-warning btn-lg fw-bold py-3">SAVE ACTUALS</button>
-                        <a asp-page="/Jobs/Details" asp-route-id="@Model.Job.Id" class="btn btn-outline-secondary">Cancel</a>
+                        <a asp-page="/Jobs/Details" asp-route-slug="@Model.Job.Slug" class="btn btn-outline-secondary">Cancel</a>
                     </div>
                 </form>
             </div>

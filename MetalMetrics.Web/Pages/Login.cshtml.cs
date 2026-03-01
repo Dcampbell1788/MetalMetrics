@@ -71,11 +71,15 @@ public class LoginModel : PageModel
 
         if (result.Succeeded)
         {
-            // Refresh claims for TenantId and Role
+            // Refresh claims for TenantId, FullName, and Role
             var claims = await _userManager.GetClaimsAsync(user);
             if (!claims.Any(c => c.Type == "TenantId"))
             {
                 await _userManager.AddClaimAsync(user, new Claim("TenantId", user.TenantId.ToString()));
+            }
+            if (!claims.Any(c => c.Type == "FullName"))
+            {
+                await _userManager.AddClaimAsync(user, new Claim("FullName", user.FullName));
             }
 
             return LocalRedirect(returnUrl);

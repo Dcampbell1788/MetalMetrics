@@ -1,9 +1,7 @@
 # Feature 2.1 — ASP.NET Identity Setup
 
 **Epic:** Epic 2 — Authentication, Tenancy & Role Management
-**Status:** Pending
-**Priority:** Critical (Foundation)
-**Estimated Effort:** Medium
+**Status:** Complete
 
 ---
 
@@ -11,49 +9,74 @@
 
 **As a** developer,
 **I want** ASP.NET Identity configured with a custom `AppUser` that includes tenant and role information,
-**so that** user authentication and tenant association are handled by the framework with minimal custom code.
+**so that** user authentication and tenant association are handled by the framework.
 
 ---
 
-## Acceptance Criteria
+## Implementation
 
-- [ ] `AppUser` class extends `IdentityUser` with additional properties: `TenantId` (Guid), `Role` (string/enum), `FullName` (string)
-- [ ] ASP.NET Identity configured to use SQLite via `AppDbContext`
-- [ ] Cookie authentication scheme configured
-- [ ] Identity services registered in `Program.cs` DI container
-- [ ] Identity tables created via EF Core migration
-- [ ] Password policy configured (reasonable defaults for hackathon — not overly strict)
-- [ ] `AppUser.TenantId` is indexed for query performance
+### AppUser Entity (`Core/Entities/AppUser.cs`)
 
----
+```csharp
+public class AppUser : IdentityUser
+{
+    public string FullName { get; set; } = string.Empty;
+    public Guid TenantId { get; set; }
+    public AppRole Role { get; set; }
+    public Tenant? Tenant { get; set; }
+}
+```
 
-## Technical Notes
+Note: `AppUser` extends `IdentityUser` (not `BaseEntity`). It has its own `TenantId`.
 
-- Extend `IdentityUser` in `MetalMetrics.Core/Entities/AppUser.cs`
-- Register Identity in `Program.cs`:
-  ```csharp
-  builder.Services.AddDefaultIdentity<AppUser>()
-      .AddRoles<IdentityRole>()
-      .AddEntityFrameworkStores<AppDbContext>();
-  ```
-- Cookie config: redirect to `/Login` on unauthorized, `/AccessDenied` on forbidden
-- Role enum values: `Admin`, `Owner`, `ProjectManager`, `Foreman`, `Estimator`, `Journeyman`
-- Consider storing role as a claim for easy access in `TenantProvider` and nav
+### AppRole Enum (`Core/Enums/AppRole.cs`)
 
----
+```csharp
+public enum AppRole
+{
+    Admin, Owner, ProjectManager, Foreman, Estimator, Journeyman
+}
+```
 
-## Dependencies
+### Identity Registration (`Web/Program.cs`)
 
-- Feature 1.1 (Solution structure)
-- Feature 1.2 (EF Core + SQLite — DbContext must exist)
-- Feature 1.3 (Base Entity Model)
+```csharp
+builder.Services.AddIdentity<AppUser, IdentityRole>(options =>
+{
+    options.Password.RequireDigit = true;
+    options.Password.RequireLowercase = true;
+    options.Password.RequireUppercase = false;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequiredLength = 6;
+})
+.AddEntityFrameworkStores<AppDbContext>()
+.AddDefaultTokenProviders();
+
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.LoginPath = "/Login";
+    options.AccessDeniedPath = "/Login";
+});
+```
+
+### Role Seeding (Program.cs startup)
+
+All 6 roles are created on startup via `RoleManager<IdentityRole>`:
+```csharp
+var roles = new[] { "Admin", "Owner", "ProjectManager", "Foreman", "Estimator", "Journeyman" };
+foreach (var role in roles)
+{
+    if (!await roleManager.RoleExistsAsync(role))
+        await roleManager.CreateAsync(new IdentityRole(role));
+}
+```
 
 ---
 
 ## Definition of Done
 
-- [ ] `AppUser` entity created with `TenantId`, `Role`, `FullName`
-- [ ] Identity configured with SQLite store
-- [ ] Cookie auth scheme working (redirects on unauthorized)
-- [ ] Identity migration applied cleanly
-- [ ] Registration and login endpoints functional (even if UI is minimal)
+- [x] AppUser entity with FullName, TenantId, Role (AppRole enum)
+- [x] Identity configured with SQLite store
+- [x] Cookie auth with redirect to /Login
+- [x] Password policy: digit + lowercase required, 6+ chars
+- [x] All 6 roles seeded on startup

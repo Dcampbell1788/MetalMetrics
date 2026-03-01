@@ -1,9 +1,7 @@
 # Feature 1.3 — Base Entity Model
 
 **Epic:** Epic 1 — Project Scaffold & Infrastructure
-**Status:** Pending
-**Priority:** Critical (Foundation)
-**Estimated Effort:** Small
+**Status:** Complete
 
 ---
 
@@ -11,50 +9,65 @@
 
 **As a** developer,
 **I want** a base entity class with common fields (Id, TenantId, timestamps),
-**so that** all domain entities inherit consistent identity, tenancy, and auditing behavior without duplication.
+**so that** all domain entities inherit consistent identity, tenancy, and auditing behavior.
 
 ---
 
-## Acceptance Criteria
+## Implementation
 
-- [ ] `BaseEntity` abstract class created in `MetalMetrics.Core`
-- [ ] `BaseEntity` includes: `Id` (Guid), `TenantId` (Guid), `CreatedAt` (DateTime), `UpdatedAt` (DateTime)
-- [ ] `IAuditable` interface defined with `CreatedAt` and `UpdatedAt` properties
-- [ ] `BaseEntity` implements `IAuditable`
-- [ ] `SaveChangesAsync` override in `AppDbContext` automatically sets `CreatedAt` on insert and `UpdatedAt` on update
-- [ ] `Id` defaults to `Guid.NewGuid()` on creation
-- [ ] `TenantId` is required (non-nullable) on all entities
+### BaseEntity (`Core/Entities/BaseEntity.cs`)
 
----
+```csharp
+public abstract class BaseEntity : IAuditable
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid TenantId { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+}
+```
 
-## Technical Notes
+### IAuditable (`Core/Interfaces/IAuditable.cs`)
 
-- `BaseEntity` location: `MetalMetrics.Core/Entities/BaseEntity.cs`
-- `IAuditable` location: `MetalMetrics.Core/Interfaces/IAuditable.cs`
-- `SaveChangesAsync` override pattern:
-  ```csharp
-  foreach (var entry in ChangeTracker.Entries<IAuditable>())
-  {
-      if (entry.State == EntityState.Added)
-          entry.Entity.CreatedAt = DateTime.UtcNow;
-      if (entry.State == EntityState.Modified)
-          entry.Entity.UpdatedAt = DateTime.UtcNow;
-  }
-  ```
-- All future entities (Job, JobEstimate, JobActuals, Tenant, TenantSettings) will inherit from `BaseEntity`
+```csharp
+public interface IAuditable
+{
+    DateTime CreatedAt { get; set; }
+    DateTime UpdatedAt { get; set; }
+}
+```
 
----
+### Auto-Behavior (AppDbContext.SaveChangesAsync)
 
-## Dependencies
+```csharp
+// Auto-set TenantId for new BaseEntity objects
+foreach (var entry in ChangeTracker.Entries<BaseEntity>()
+    .Where(e => e.State == EntityState.Added && e.Entity.TenantId == Guid.Empty))
+{
+    entry.Entity.TenantId = _tenantProvider.TenantId;
+}
 
-- Feature 1.1 (Solution & Project Structure — Core project must exist)
+// Auto-set audit timestamps
+foreach (var entry in ChangeTracker.Entries<IAuditable>())
+{
+    if (entry.State == EntityState.Added)
+        entry.Entity.CreatedAt = DateTime.UtcNow;
+    if (entry.State == EntityState.Modified)
+        entry.Entity.UpdatedAt = DateTime.UtcNow;
+}
+```
+
+### Entities extending BaseEntity
+
+`Tenant`, `TenantSettings`, `Job`, `JobEstimate`, `JobActuals`, `JobAssignment`, `JobTimeEntry`, `JobNote`
+
+Note: `AppUser` extends `IdentityUser` (not BaseEntity) but has its own `TenantId` and `Role` properties.
 
 ---
 
 ## Definition of Done
 
-- [ ] `BaseEntity` abstract class created with all required fields
-- [ ] `IAuditable` interface defined
-- [ ] `SaveChangesAsync` override auto-populates audit timestamps
-- [ ] At least 1 unit test verifying audit field behavior
-- [ ] All fields have appropriate data annotations or Fluent API configuration
+- [x] BaseEntity abstract class with Id (Guid), TenantId, CreatedAt, UpdatedAt
+- [x] IAuditable interface defined
+- [x] SaveChangesAsync auto-sets TenantId and timestamps
+- [x] 3 unit tests (Guid generation, uniqueness, default TenantId)

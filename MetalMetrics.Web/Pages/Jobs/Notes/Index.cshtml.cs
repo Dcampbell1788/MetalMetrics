@@ -50,27 +50,27 @@ public class IndexModel : PageModel
         public IFormFile? Image { get; set; }
     }
 
-    public async Task<IActionResult> OnGetAsync(Guid jobId)
+    public async Task<IActionResult> OnGetAsync(string slug)
     {
-        var job = await _jobService.GetByIdAsync(jobId);
+        var job = await _jobService.GetBySlugAsync(slug);
         if (job == null) return NotFound();
 
         var currentUser = await _userManager.GetUserAsync(User);
         if (currentUser == null) return Forbid();
 
-        if (!await CanAccessJobAsync(jobId, currentUser))
+        if (!await CanAccessJobAsync(job.Id, currentUser))
             return Forbid();
 
         Job = job;
-        NotesList = await _noteService.GetByJobIdAsync(jobId);
+        NotesList = await _noteService.GetByJobIdAsync(job.Id);
         CurrentUserId = currentUser.Id;
 
         return Page();
     }
 
-    public async Task<IActionResult> OnPostAsync(Guid jobId)
+    public async Task<IActionResult> OnPostAsync(string slug)
     {
-        var job = await _jobService.GetByIdAsync(jobId);
+        var job = await _jobService.GetBySlugAsync(slug);
         if (job == null) return NotFound();
 
         var currentUser = await _userManager.GetUserAsync(User);
@@ -79,7 +79,7 @@ public class IndexModel : PageModel
         if (!ModelState.IsValid)
         {
             Job = job;
-            NotesList = await _noteService.GetByJobIdAsync(jobId);
+            NotesList = await _noteService.GetByJobIdAsync(job.Id);
             CurrentUserId = currentUser.Id;
             return Page();
         }
@@ -94,7 +94,7 @@ public class IndexModel : PageModel
             {
                 ModelState.AddModelError("Input.Image", "Only JPG, PNG, and GIF files are allowed.");
                 Job = job;
-                NotesList = await _noteService.GetByJobIdAsync(jobId);
+                NotesList = await _noteService.GetByJobIdAsync(job.Id);
                 CurrentUserId = currentUser.Id;
                 return Page();
             }
@@ -103,7 +103,7 @@ public class IndexModel : PageModel
             {
                 ModelState.AddModelError("Input.Image", "Image must be under 5MB.");
                 Job = job;
-                NotesList = await _noteService.GetByJobIdAsync(jobId);
+                NotesList = await _noteService.GetByJobIdAsync(job.Id);
                 CurrentUserId = currentUser.Id;
                 return Page();
             }
@@ -120,7 +120,7 @@ public class IndexModel : PageModel
 
         var note = new JobNote
         {
-            JobId = jobId,
+            JobId = job.Id,
             UserId = currentUser.Id,
             TenantId = currentUser.TenantId,
             AuthorName = currentUser.FullName,
@@ -130,15 +130,18 @@ public class IndexModel : PageModel
 
         await _noteService.CreateAsync(note);
         TempData["Success"] = "Note added.";
-        return RedirectToPage(new { jobId });
+        return RedirectToPage(new { slug });
     }
 
-    public async Task<IActionResult> OnPostDeleteAsync(Guid jobId, Guid noteId)
+    public async Task<IActionResult> OnPostDeleteAsync(string slug, Guid noteId)
     {
         var currentUser = await _userManager.GetUserAsync(User);
         if (currentUser == null) return Forbid();
 
-        var notes = await _noteService.GetByJobIdAsync(jobId);
+        var job = await _jobService.GetBySlugAsync(slug);
+        if (job == null) return NotFound();
+
+        var notes = await _noteService.GetByJobIdAsync(job.Id);
         var note = notes.FirstOrDefault(n => n.Id == noteId);
         if (note == null) return NotFound();
 
@@ -152,7 +155,7 @@ public class IndexModel : PageModel
 
         await _noteService.DeleteAsync(noteId);
         TempData["Success"] = "Note deleted.";
-        return RedirectToPage(new { jobId });
+        return RedirectToPage(new { slug });
     }
 
     private async Task<bool> CanAccessJobAsync(Guid jobId, AppUser user)

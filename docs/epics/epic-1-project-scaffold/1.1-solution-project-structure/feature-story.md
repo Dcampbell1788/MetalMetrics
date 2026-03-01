@@ -1,9 +1,8 @@
 # Feature 1.1 — Solution & Project Structure
 
 **Epic:** Epic 1 — Project Scaffold & Infrastructure
-**Status:** Pending
+**Status:** Complete
 **Priority:** Critical (Foundation)
-**Estimated Effort:** Small
 
 ---
 
@@ -15,41 +14,57 @@
 
 ---
 
-## Acceptance Criteria
+## Implementation
 
-- [ ] Solution file `MetalMetrics.sln` exists at the repository root
-- [ ] `MetalMetrics.Web` project exists (Razor Pages — the UI host)
-- [ ] `MetalMetrics.Core` project exists (domain entities, service interfaces, DTOs)
-- [ ] `MetalMetrics.Infrastructure` project exists (EF Core DbContext, AI client, external integrations)
-- [ ] `MetalMetrics.Tests` project exists (MSTest unit tests)
-- [ ] Project references follow clean architecture (Web → Core + Infrastructure, Infrastructure → Core, Tests → all)
-- [ ] `.editorconfig` is configured with team coding conventions
-- [ ] `global.json` pins the .NET 8 SDK version
-- [ ] Solution builds successfully with `dotnet build`
-- [ ] All projects target `net8.0`
+### Solution Structure
+
+```
+MetalMetrics.sln
+├── MetalMetrics.Core/              (net8.0 classlib)
+│   ├── Entities/                   BaseEntity, AppUser, Tenant, TenantSettings, Job, JobEstimate, JobActuals, JobAssignment, JobTimeEntry, JobNote
+│   ├── DTOs/                       AIQuoteRequest/Response, JobSummaryDto, DashboardKpiDto, JobProfitabilityReport, VarianceDetail, CustomerProfitabilityDto, CategoryVarianceDto, AtRiskJobDto
+│   ├── Enums/                      AppRole, JobStatus
+│   └── Interfaces/                 ITenantProvider, IJobService, IQuoteService, IActualsService, IProfitabilityService, IDashboardService, IReportsService, IAIQuoteService, IJobAssignmentService, ITimeEntryService, IJobNoteService, IAuditable
+├── MetalMetrics.Infrastructure/    (net8.0 classlib, refs Core)
+│   ├── Data/                       AppDbContext, DbSeeder, DesignTimeDbContextFactory
+│   ├── Migrations/                 7 EF Core migrations
+│   └── Services/                   JobService, QuoteService, ActualsService, ProfitabilityService, DashboardService, ReportsService, ClaudeAIQuoteService, PromptTemplates, JobAssignmentService, TimeEntryService, JobNoteService, TenantProvider
+├── MetalMetrics.Web/               (net8.0 webapp, refs Core + Infrastructure)
+│   ├── Pages/                      Razor Pages (Dashboard, Jobs, Admin, Reports, Auth)
+│   ├── wwwroot/                    css/site.css, uploads/notes/
+│   └── Program.cs                  DI, auth, middleware, seeding
+└── MetalMetrics.Tests/             (net8.0 mstest, refs all)
+    ├── Core/                       BaseEntityTests
+    └── Infrastructure/             AppDbContextTests, JobServiceTests, QuoteServiceTests, ActualsServiceTests, ProfitabilityServiceTests
+```
+
+### Project References
+
+- `Web` -> `Core` + `Infrastructure`
+- `Infrastructure` -> `Core`
+- `Tests` -> `Core` + `Infrastructure` + `Web`
+
+### NuGet Dependencies
+
+**Core:** `Microsoft.Extensions.Identity.Stores 8.0.*`
+**Infrastructure:** `Microsoft.AspNetCore.Identity.EntityFrameworkCore 8.0.*`, `Microsoft.EntityFrameworkCore.Sqlite 8.0.*`, `Microsoft.EntityFrameworkCore.Tools 8.0.*`
+**Web:** `Microsoft.EntityFrameworkCore.Design 8.0.*`
+**Tests:** `MSTest 3.1.1`, `Microsoft.NET.Test.Sdk 17.8.0`, `Microsoft.EntityFrameworkCore.InMemory 8.0.*`
 
 ---
 
 ## Technical Notes
 
-- Use `dotnet new` CLI commands to scaffold projects
-- Razor Pages project template: `dotnet new webapp`
-- Core project: `dotnet new classlib`
-- Infrastructure project: `dotnet new classlib`
-- Tests project: `dotnet new mstest`
-- Dependency direction: Web depends on Core + Infrastructure; Infrastructure depends on Core; Tests can reference all
-
----
-
-## Dependencies
-
-- None (this is the first feature)
+- All projects target `net8.0` with nullable reference types enabled
+- No `.editorconfig` or `global.json` — uses SDK defaults
+- Solution builds with `dotnet build` — zero errors, zero warnings
+- Web project has `UserSecretsId` for local Claude API key storage
 
 ---
 
 ## Definition of Done
 
-- [ ] All four projects created and referenced correctly
-- [ ] Solution builds with zero errors and zero warnings
-- [ ] `.editorconfig` and `global.json` committed
-- [ ] Folder structure reviewed by team
+- [x] All four projects created and referenced correctly
+- [x] Solution builds with zero errors and zero warnings
+- [x] Project references follow clean architecture
+- [x] 20 unit tests passing

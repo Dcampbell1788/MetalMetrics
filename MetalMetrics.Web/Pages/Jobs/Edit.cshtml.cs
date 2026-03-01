@@ -21,7 +21,7 @@ public class EditModel : PageModel
     [BindProperty]
     public InputModel Input { get; set; } = new();
 
-    public Guid JobId { get; set; }
+    public string JobSlug { get; set; } = string.Empty;
     public string JobNumber { get; set; } = string.Empty;
 
     public List<SelectListItem> StatusOptions => Enum.GetValues<JobStatus>()
@@ -44,15 +44,15 @@ public class EditModel : PageModel
         public JobStatus Status { get; set; }
     }
 
-    public async Task<IActionResult> OnGetAsync(Guid id)
+    public async Task<IActionResult> OnGetAsync(string slug)
     {
-        var job = await _jobService.GetByIdAsync(id);
+        var job = await _jobService.GetBySlugAsync(slug);
         if (job == null)
         {
             return NotFound();
         }
 
-        JobId = job.Id;
+        JobSlug = job.Slug;
         JobNumber = job.JobNumber;
         Input = new InputModel
         {
@@ -64,17 +64,17 @@ public class EditModel : PageModel
         return Page();
     }
 
-    public async Task<IActionResult> OnPostAsync(Guid id)
+    public async Task<IActionResult> OnPostAsync(string slug)
     {
         if (!ModelState.IsValid)
         {
-            var job2 = await _jobService.GetByIdAsync(id);
-            JobId = id;
+            var job2 = await _jobService.GetBySlugAsync(slug);
+            JobSlug = slug;
             JobNumber = job2?.JobNumber ?? string.Empty;
             return Page();
         }
 
-        var job = await _jobService.GetByIdAsync(id);
+        var job = await _jobService.GetBySlugAsync(slug);
         if (job == null)
         {
             return NotFound();
@@ -92,6 +92,6 @@ public class EditModel : PageModel
         await _jobService.UpdateAsync(job);
 
         TempData["Success"] = $"Job {job.JobNumber} updated successfully.";
-        return RedirectToPage("Details", new { id = job.Id });
+        return RedirectToPage("Details", new { slug = job.Slug });
     }
 }

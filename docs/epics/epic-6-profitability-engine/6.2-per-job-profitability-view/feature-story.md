@@ -1,103 +1,53 @@
 # Feature 6.2 — Per-Job Profitability View
 
-**Epic:** Epic 6 — Profitability Engine & Per-Job Analysis
-**Status:** Pending
-**Priority:** Critical
-**Estimated Effort:** Large
+**Epic:** Epic 6 — Profitability Engine
+**Status:** Complete
 
 ---
 
 ## User Story
 
 **As a** project manager or owner,
-**I want** a clear, visual profitability report for each job showing whether we made or lost money,
-**so that** I can quickly understand job performance and identify which cost categories were over or under budget.
+**I want** a clear visual profitability report for each job,
+**so that** I can understand job performance and identify cost overruns.
 
 ---
 
-## Acceptance Criteria
+## Implementation
 
-- [ ] Profitability page accessible at `/Jobs/{jobId}/Profitability`
-- [ ] Hero metric at the top: "PROFIT +$X,XXX" (green) or "LOSS -$X,XXX" (red)
-- [ ] Stacked bar chart comparing Estimated vs Actual costs by category
-- [ ] Red/green color coding for each category variance
-- [ ] Margin metrics displayed: Estimated Margin %, Actual Margin %, Margin Drift
-- [ ] Warning badges for significant variances (from profitability service)
-- [ ] Table with detailed numbers: Estimated, Actual, Variance ($), Variance (%) per category
-- [ ] Link back to job details
-- [ ] Page shows "Actuals not entered" message if `JobActuals` doesn't exist
-- [ ] Access: Admin, Owner, ProjectManager
+### Page: `/Jobs/Profitability/{slug}` (`Web/Pages/Jobs/Profitability/Index.cshtml.cs`)
 
----
+**Authorization:** `[Authorize(Policy = "CanViewReports")]`
 
-## Page Layout
+### Layout Sections
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  Job #JOB-0042 — ABC Fabrication                               │
-│                                                                 │
-│  ┌─────────────────────────────────────────────────────────┐    │
-│  │          ✅ PROFIT  +$207.62                            │    │
-│  │          Actual Margin: 16.6%  (Target: 20%)            │    │
-│  └─────────────────────────────────────────────────────────┘    │
-│                                                                 │
-│  ⚠️ Material cost exceeded estimate by 8.8%                    │
-│  ⚠️ Margin (16.6%) is below target (20%)                      │
-│                                                                 │
-│  ┌─ Estimated vs Actual Cost by Category ──────────────────┐   │
-│  │  Labor    ████████████ $337  ███████████████ $375  🔴   │   │
-│  │  Material ████████████ $285  █████████████████ $310  🔴 │   │
-│  │  Machine  ████████████ $300  █████████████ $225  🟢     │   │
-│  │  Overhead ████████████ $65   ████████████████ $82  🔴   │   │
-│  └─────────────────────────────────────────────────────────┘   │
-│                                                                 │
-│  ┌─ Detailed Breakdown ───────────────────────────────────┐    │
-│  │  Category  │ Estimated │ Actual  │ Var ($) │ Var (%)   │    │
-│  │  Labor     │ $337.50   │ $375.00 │ +$37.50 │ +11.1%   │    │
-│  │  Material  │ $285.00   │ $310.00 │ +$25.00 │ +8.8%    │    │
-│  │  Machine   │ $300.00   │ $225.00 │ -$75.00 │ -25.0%   │    │
-│  │  Overhead  │ $65.14    │ $82.50  │ +$17.36 │ +26.6%   │    │
-│  │  TOTAL     │ $987.64   │ $992.50 │ +$4.86  │ +0.5%    │    │
-│  └─────────────────────────────────────────────────────────┘   │
-│                                                                 │
-│  Quote Price: $1,250.00    Actual Revenue: $1,200.12            │
-│  Est. Margin: 21.0%       Actual Margin: 16.6%                 │
-│  Margin Drift: -4.4 points                                     │
-│                                                                 │
-│  [← Back to Job]                                               │
-└─────────────────────────────────────────────────────────────────┘
-```
+1. **Hero Metric:** Large "PROFIT +$X,XXX" (green) or "LOSS -$X,XXX" (red) with actual margin %
+2. **Warning Badges:** Bootstrap alerts for each warning from ProfitabilityService
+3. **Stacked Bar Chart:** Chart.js grouped bar — Estimated vs Actual by category (Labor, Material, Machine, Overhead). Color: blue (estimated), green/red (actual based on variance direction)
+4. **Detailed Breakdown Table:** Estimated, Actual, Variance ($), Variance (%) per category + totals
+5. **Margin Summary:** Quote Price, Actual Revenue, Estimated Margin %, Actual Margin %, Margin Drift
 
----
+### Data Flow
 
-## Technical Notes
+1. Load Job by slug (include Estimate + Actuals)
+2. Call `ProfitabilityService.CalculateAsync(jobId)`
+3. If null (missing data): show "Actuals not entered yet" with link to enter actuals
+4. Serialize report to JSON for Chart.js
 
-- Page: `Pages/Jobs/Profitability/Index.cshtml` + `Index.cshtml.cs`
-- Calls `IProfitabilityService.CalculateAsync(jobId)` to get the report
-- Chart: use Chart.js (CDN) for the stacked bar chart
-  - Two bars per category: blue (estimated), actual color based on variance (green under, red over)
-- Hero metric: large text with conditional CSS class (profit-green / loss-red)
-- Warning badges: use Bootstrap alerts or custom badges
-- Handle missing actuals: display a message with a link to enter actuals
+### Chart.js Bar Chart
 
----
-
-## Dependencies
-
-- Feature 6.1 (Profitability Calculation Service)
-- Feature 3.3 (Quote Entity)
-- Feature 5.1 (Job Actuals Entity)
-- Feature 2.5 (Role-Based Authorization)
+- 4 category groups (Labor, Material, Machine, Overhead)
+- 2 bars per group: Estimated (blue), Actual (green if under, red if over)
+- Tooltip shows variance amount
 
 ---
 
 ## Definition of Done
 
-- [ ] Profitability page renders with all sections
-- [ ] Hero metric displays correct verdict with color coding
-- [ ] Bar chart renders with Chart.js
-- [ ] Detailed table shows correct numbers
-- [ ] Warning badges display for significant variances
-- [ ] Missing actuals handled gracefully
-- [ ] Role-based access enforced
-- [ ] Manual smoke test with profit and loss scenarios
+- [x] Hero metric with profit/loss verdict and color coding
+- [x] Warning badges for significant variances
+- [x] Chart.js bar chart (estimated vs actual by category)
+- [x] Detailed breakdown table
+- [x] Margin summary with drift
+- [x] Missing actuals handled gracefully
+- [x] Role-based access enforced

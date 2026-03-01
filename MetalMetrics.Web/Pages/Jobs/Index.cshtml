@@ -12,7 +12,7 @@
     }
 </div>
 
-<form method="get" class="row g-2 mb-3">
+<form method="post" class="row g-2 mb-3">
     <div class="col-md-4">
         <input asp-for="Search" class="form-control" placeholder="Search by customer or job #" />
     </div>
@@ -21,9 +21,15 @@
             <option value="">All Statuses</option>
         </select>
     </div>
-    <div class="col-md-2">
+    <div class="col-auto">
         <button type="submit" class="btn btn-outline-secondary">Filter</button>
     </div>
+    @if (!string.IsNullOrEmpty(Model.Search) || Model.StatusFilter.HasValue)
+    {
+        <div class="col-auto">
+            <button type="submit" asp-page-handler="Clear" class="btn btn-outline-danger">Clear</button>
+        </div>
+    }
 </form>
 
 @if (Model.Jobs.Count == 0)
@@ -78,10 +84,10 @@ else
                             </td>
                             <td>@job.CreatedAt.ToString("MMM dd, yyyy")</td>
                             <td>
-                                <a asp-page="Details" asp-route-id="@job.Id" class="btn btn-sm btn-outline-primary">View</a>
+                                <a asp-page="Details" asp-route-slug="@job.Slug" class="btn btn-sm btn-outline-primary">View</a>
                                 @if (User.IsInRole("Admin") || User.IsInRole("Owner") || User.IsInRole("ProjectManager") || User.IsInRole("Foreman"))
                                 {
-                                    <a asp-page="Edit" asp-route-id="@job.Id" class="btn btn-sm btn-outline-secondary">Edit</a>
+                                    <a asp-page="Edit" asp-route-slug="@job.Slug" class="btn btn-sm btn-outline-secondary">Edit</a>
                                 }
                             </td>
                         </tr>

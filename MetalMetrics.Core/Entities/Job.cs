@@ -5,6 +5,7 @@ namespace MetalMetrics.Core.Entities;
 public class Job : BaseEntity
 {
     public string JobNumber { get; set; } = string.Empty;
+    public string Slug { get; set; } = string.Empty;
     public string CustomerName { get; set; } = string.Empty;
     public string? Description { get; set; }
     public JobStatus Status { get; set; } = JobStatus.Quoted;

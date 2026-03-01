@@ -1,4 +1,4 @@
-@page "{jobId:guid}"
+@page "{slug}"
 @model MetalMetrics.Web.Pages.Jobs.Profitability.IndexModel
 @{
     ViewData["Title"] = $"Profitability — {Model.Job.JobNumber}";
@@ -11,9 +11,9 @@
 {
     <div class="alert alert-info">
         <strong>Actuals not entered.</strong> Enter actual costs to see the profitability analysis.
-        <a asp-page="/Jobs/Actuals/Enter" asp-route-jobId="@Model.Job.Id" class="alert-link ms-2">Enter Actuals</a>
+        <a asp-page="/Jobs/Actuals/Enter" asp-route-slug="@Model.Job.Slug" class="alert-link ms-2">Enter Actuals</a>
     </div>
-    <a asp-page="/Jobs/Details" asp-route-id="@Model.Job.Id" class="btn btn-outline-secondary">Back to Job</a>
+    <a asp-page="/Jobs/Details" asp-route-slug="@Model.Job.Slug" class="btn btn-outline-secondary">Back to Job</a>
 }
 else if (Model.Report != null)
 {
@@ -139,7 +139,7 @@ else if (Model.Report != null)
         </div>
     </div>
 
-    <a asp-page="/Jobs/Details" asp-route-id="@Model.Job.Id" class="btn btn-outline-secondary">Back to Job</a>
+    <a asp-page="/Jobs/Details" asp-route-slug="@Model.Job.Slug" class="btn btn-outline-secondary">Back to Job</a>
 }
 
 @section Scripts {

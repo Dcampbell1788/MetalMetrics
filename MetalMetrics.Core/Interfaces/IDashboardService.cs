@@ -8,4 +8,5 @@ public interface IDashboardService
     Task<List<JobSummaryDto>> GetJobSummariesAsync(int limit = 20);
     Task<List<CustomerProfitabilityDto>> GetCustomerProfitabilityAsync();
     Task<List<CategoryVarianceDto>> GetCategoryVariancesAsync();
+    Task<List<AtRiskJobDto>> GetAtRiskJobsAsync(decimal thresholdPercent = 10);
 }

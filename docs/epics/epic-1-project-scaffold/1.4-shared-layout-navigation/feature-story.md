@@ -1,64 +1,73 @@
 # Feature 1.4 — Shared Layout & Navigation
 
 **Epic:** Epic 1 — Project Scaffold & Infrastructure
-**Status:** Pending
-**Priority:** High
-**Estimated Effort:** Medium
+**Status:** Complete
 
 ---
 
 ## User Story
 
-**As a** user of MetalMetrics,
-**I want** a clean, responsive navigation layout with role-aware menu items,
-**so that** I can easily navigate the application and only see features relevant to my role.
+**As a** user,
+**I want** a responsive navigation layout with role-aware menu items,
+**so that** I can access features relevant to my role from any page.
 
 ---
 
-## Acceptance Criteria
+## Implementation
 
-- [ ] `_Layout.cshtml` created with responsive navigation bar
-- [ ] Navigation includes links to: Dashboard, Jobs, Admin (role-dependent)
-- [ ] Menu items are conditionally shown/hidden based on user role
-- [ ] "MetalMetrics" branding (logo or text) displayed in the nav bar
-- [ ] Toast/notification partial created for success and error messages
-- [ ] Bootstrap 5 CSS framework integrated (ships with .NET template)
-- [ ] Layout is responsive and works on desktop, tablet, and mobile
-- [ ] Footer with minimal branding
+### Layout (`Web/Pages/Shared/_Layout.cshtml`)
 
----
+- Bootstrap 5 responsive navbar (dark theme)
+- "MetalMetrics" branding in navbar
+- Role-aware navigation using `User.HasClaim("Role", ...)`:
 
-## Technical Notes
+| Nav Item   | Visible To                            |
+|------------|---------------------------------------|
+| Dashboard  | Admin, Owner, ProjectManager          |
+| Jobs       | All authenticated users               |
+| Reports    | Admin, Owner, ProjectManager          |
+| Admin      | Admin, Owner                          |
 
-- Bootstrap 5 is included by default in the .NET 8 Razor Pages template
-- Use `User.IsInRole("Admin")` or claim checks for conditional nav items
-- Role-based nav visibility:
+- `@RenderSection("Scripts", required: false)` for per-page scripts
 
-  | Nav Item   | Visible To                              |
-  |------------|-----------------------------------------|
-  | Dashboard  | Admin, Owner, ProjectManager, Foreman   |
-  | Jobs       | All authenticated users                 |
-  | Quotes     | Admin, Owner, ProjectManager, Estimator |
-  | Actuals    | Admin, Owner, PM, Foreman, Journeyman   |
-  | Reports    | Admin, Owner, ProjectManager            |
-  | Admin      | Admin, Owner                            |
+### Partials
 
-- Toast notifications: use a `TempData`-based approach or a `_Notifications.cshtml` partial
-- Consider a `_LoginPartial.cshtml` for login/logout/user display in the nav
+- **`_LoginPartial.cshtml`** — User name + Logout (authenticated) or Login/Register links
+- **`_Notifications.cshtml`** — TempData alerts (`TempData["Success"]`, `TempData["Error"]`, `TempData["Warning"]`) rendered as Bootstrap alert-success/danger/warning
+- **`_ValidationScriptsPartial.cshtml`** — jQuery validation
 
----
+### Home Page Redirect (`Web/Pages/Index.cshtml.cs`)
 
-## Dependencies
+Role-based redirect on login:
+- Journeyman/Foreman -> `/Jobs?statusFilter=InProgress`
+- Estimator -> `/Jobs?statusFilter=Quoted`
+- Owner/Admin/PM -> `/Dashboard`
 
-- Feature 1.1 (Solution & Project Structure)
-- Feature 2.5 (Role-Based Authorization — for role checks in nav, but can stub initially)
+### CSS (`Web/wwwroot/css/site.css`)
+
+```css
+:root {
+  --mm-profit: #198754;    /* green */
+  --mm-loss: #dc3545;      /* red */
+  --mm-neutral: #0d6efd;   /* blue */
+  --mm-warning: #ffc107;   /* yellow */
+  --mm-gold: #ffc107;      /* accent */
+}
+```
+
+Utility classes: `.text-profit`, `.text-loss`, `.bg-profit`, `.bg-loss`
+Card header accent: `.card-header.bg-dark { border-bottom: 2px solid var(--mm-gold); }`
+Clickable card hover: `a:hover .card.shadow-sm { transform: translateY(-2px); }`
+Print styles: hide nav/footer/buttons, preserve colors with `print-color-adjust: exact`
 
 ---
 
 ## Definition of Done
 
-- [ ] `_Layout.cshtml` renders a responsive nav bar with branding
-- [ ] Nav items are role-aware (hide/show based on role)
-- [ ] Toast/notification partial works for success and error messages
-- [ ] Layout is mobile-responsive
-- [ ] Manual visual smoke test passed on desktop and mobile viewport
+- [x] Responsive Bootstrap 5 layout with dark navbar
+- [x] Role-aware navigation links
+- [x] TempData notification partial
+- [x] Login/logout partial
+- [x] Color palette CSS variables
+- [x] Print-friendly styles
+- [x] Home page role-based redirects

@@ -1,9 +1,7 @@
 # Feature 2.2 — Tenant Registration (Company Onboarding)
 
 **Epic:** Epic 2 — Authentication, Tenancy & Role Management
-**Status:** Pending
-**Priority:** Critical
-**Estimated Effort:** Medium
+**Status:** Complete
 
 ---
 
@@ -11,50 +9,47 @@
 
 **As a** new user (company owner),
 **I want** to register my company and create my admin account in one step,
-**so that** I can quickly onboard and start using MetalMetrics without a complicated setup process.
+**so that** I can quickly onboard and start using MetalMetrics.
 
 ---
 
-## Acceptance Criteria
+## Implementation
 
-- [ ] Registration page accessible at `/Register`
-- [ ] Registration form includes: Company Name, Owner Full Name, Email, Password, Confirm Password
-- [ ] On submit, creates a new `Tenant` entity with the company name
-- [ ] Creates the first `AppUser` linked to that tenant with the `Admin` role
-- [ ] User is automatically logged in after successful registration
-- [ ] Redirects to Dashboard after registration
-- [ ] Validates: required fields, email format, password strength, passwords match
-- [ ] Displays validation errors inline on the form
-- [ ] Duplicate email addresses are rejected with a clear message
+### Page: `/Register` (`Web/Pages/Register.cshtml.cs`)
 
----
+**Form Fields:** Company Name, Full Name, Email, Password, Confirm Password
 
-## Technical Notes
+**OnPostAsync flow:**
+1. Validate form input
+2. Create `Tenant` entity with CompanyName
+3. Create `TenantSettings` with defaults (labor rate, machine rate, overhead %, target margin %)
+4. Create `AppUser` with TenantId, Role = Admin, FullName
+5. Use `UserManager.CreateAsync(user, password)` for hashed password
+6. Add to "Admin" role via `UserManager.AddToRoleAsync()`
+7. All wrapped in try/catch — on failure, rolls back by deleting created tenant
+8. Auto sign-in via `SignInManager.SignInAsync()`
+9. Redirect to `/Dashboard`
 
-- **Page:** `Pages/Register.cshtml` + `Register.cshtml.cs`
-- Flow:
-  1. Validate form input
-  2. Create `Tenant` record
-  3. Create `AppUser` with `TenantId`, `Role = Admin`, `FullName`
-  4. Sign in the user via `SignInManager`
-  5. Redirect to `/Dashboard`
-- Use `UserManager<AppUser>.CreateAsync()` for user creation
-- Wrap tenant + user creation in a transaction to ensure atomicity
+**Validation:**
+- Required fields with DataAnnotations
+- Email format validation
+- Password confirmation match
+- Duplicate email rejection (Identity handles this)
 
----
+### TenantSettings Defaults
 
-## Dependencies
-
-- Feature 2.1 (ASP.NET Identity Setup)
-- Feature 3.1 (Tenant Entity — must exist for creating tenant records)
+Created alongside tenant during registration:
+- `DefaultLaborRate` - shop default hourly labor rate
+- `DefaultMachineRate` - shop default hourly machine rate
+- `DefaultOverheadPercent` - applied to subtotal
+- `TargetMarginPercent` - profitability target
 
 ---
 
 ## Definition of Done
 
-- [ ] Registration page renders with all form fields
-- [ ] Successful registration creates Tenant + AppUser in the database
-- [ ] User is auto-logged-in and redirected to Dashboard
-- [ ] Validation errors display correctly
-- [ ] Duplicate email is handled gracefully
-- [ ] Manual smoke test passed
+- [x] Registration page renders with all form fields
+- [x] Creates Tenant + TenantSettings + AppUser atomically
+- [x] User is auto-logged-in and redirected to Dashboard
+- [x] Validation errors display correctly
+- [x] Duplicate email handled gracefully

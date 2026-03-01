@@ -1,86 +1,87 @@
 # Feature 7.4 — Customer Profitability Breakdown
 
 **Epic:** Epic 7 — Dashboard & Reporting
-**Status:** Pending
-**Priority:** Medium
-**Estimated Effort:** Medium
+**Status:** Complete
 
 ---
 
 ## User Story
 
 **As a** company owner,
-**I want** to see profit and loss aggregated by customer,
-**so that** I can identify which customers are consistently profitable and which ones are costing me money.
+**I want** profit/loss aggregated by customer with visual highlighting,
+**so that** I can identify which customers are profitable and which are costing money.
 
 ---
 
-## Acceptance Criteria
+## Implementation
 
-- [ ] Customer profitability table or chart displayed on the Dashboard
-- [ ] Aggregates all completed jobs per customer
-- [ ] Shows per customer: Total Revenue, Total Cost, Profit/Loss ($), Margin (%), Job Count
-- [ ] Sortable by: Customer Name, Profit/Loss, Margin %, Job Count
-- [ ] Color coding: green for profitable customers, red for unprofitable
-- [ ] Answers the question: "Which customers are actually profitable?"
-- [ ] Data is tenant-scoped
+### Data Source
 
----
+`IDashboardService.GetCustomerProfitabilityAsync()` — groups all jobs with actuals by `CustomerName`, aggregates revenue/cost/margin.
 
-## Page Layout
+### CustomerProfitabilityDto (`Core/DTOs/CustomerProfitabilityDto.cs`)
 
-```
-┌─ Customer Profitability ───────────────────────────────────────┐
-│                                                                 │
-│  Customer          │ Jobs │ Revenue   │ Cost      │ P/L    │ % │
-│  ──────────────────│──────│───────────│───────────│────────│───│
-│  ABC Fabrication   │  12  │ $45,200   │ $38,100   │ +$7.1k │22%│
-│  XYZ Manufacturing │   8  │ $31,000   │ $28,500   │ +$2.5k │ 8%│
-│  Smith & Sons      │   5  │ $18,400   │ $19,200   │ -$800  │-4%│
-│  Metro Industries  │   3  │ $12,800   │ $10,100   │ +$2.7k │21%│
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
+```csharp
+public class CustomerProfitabilityDto
+{
+    public string CustomerName { get; set; }
+    public int JobCount { get; set; }
+    public decimal TotalRevenue { get; set; }
+    public decimal TotalCost { get; set; }
+    public decimal ProfitLoss { get; set; }
+    public decimal MarginPercent { get; set; }
+}
 ```
 
----
+### Table Display
 
-## Technical Notes
+HTML table with columns: Customer, Jobs, Revenue, P/L, Margin
 
-- Data source: group completed jobs by `CustomerName`, aggregate costs and revenue
-- Service method: `IDashboardService.GetCustomerProfitabilityAsync()`
-- DTO:
-  ```csharp
-  public class CustomerProfitabilityDto
-  {
-      public string CustomerName { get; set; }
-      public int JobCount { get; set; }
-      public decimal TotalRevenue { get; set; }
-      public decimal TotalCost { get; set; }
-      public decimal ProfitLoss { get; set; }
-      public decimal MarginPercent { get; set; }
-  }
-  ```
-- Can be displayed as a table (sortable) or a horizontal bar chart
-- Consider Chart.js horizontal bar chart as an alternative/complement to the table
-- Sorting: client-side with JavaScript or server-side with query parameters
-- Handle customers with no completed jobs (exclude from the list)
+### Row Highlighting
 
----
+Based on margin vs target:
+- `table-danger` — margin below target by more than 3%
+- `table-warning` — margin within 3% of target
+- No class — margin at or above target
 
-## Dependencies
+```razor
+var rowClass = c.MarginPercent < Model.Kpis.TargetMarginPercent
+    ? (c.MarginPercent < Model.Kpis.TargetMarginPercent - 3 ? "table-danger" : "table-warning")
+    : "";
+```
 
-- Feature 7.1 (Main Dashboard)
-- Feature 3.2 (Job Entity — customer name)
-- Feature 5.1 (Job Actuals — actual revenue and costs)
-- Feature 6.1 (Profitability Service)
+### Sort Toggle
+
+Card header has two buttons: "Margin %" and "P/L" (btn-group).
+
+Client-side JavaScript `sortCustomerTable(mode)`:
+```javascript
+function sortCustomerTable(mode) {
+    var tbody = document.getElementById('customerTable').querySelector('tbody');
+    var rows = Array.from(tbody.querySelectorAll('tr'));
+    rows.sort(function(a, b) {
+        if (mode === 'margin') return parseFloat(b.dataset.margin) - parseFloat(a.dataset.margin);
+        else return parseFloat(b.dataset.pl) - parseFloat(a.dataset.pl);
+    });
+    rows.forEach(function(row) { tbody.appendChild(row); });
+    // Toggle active class on buttons
+}
+```
+
+Each `<tr>` has `data-margin` and `data-pl` attributes for sort values.
+
+### Color Coding
+
+- P/L column: `.text-profit` (green) if >= 0, `.text-loss` (red) if < 0
+- Margin column: same color logic
 
 ---
 
 ## Definition of Done
 
-- [ ] Customer profitability data displayed on dashboard
-- [ ] Aggregation is correct across multiple jobs per customer
-- [ ] Sorting works on all columns
-- [ ] Color coding indicates profitable vs unprofitable customers
-- [ ] Data is tenant-scoped
-- [ ] Manual smoke test with multiple customers and jobs
+- [x] Customer profitability table on dashboard
+- [x] Correct aggregation across jobs
+- [x] Row highlighting (red/yellow) based on target margin
+- [x] Client-side sort toggle (Margin % vs P/L)
+- [x] Color-coded P/L and margin columns
+- [x] Data tenant-scoped

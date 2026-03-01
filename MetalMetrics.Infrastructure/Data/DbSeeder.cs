@@ -12,6 +12,53 @@ public class DbSeeder
     private readonly string? _webRootPath;
     private readonly Random _rng = new(42); // fixed seed for reproducibility
 
+    // Realistic job profiles correlated by description.
+    // Material costs target 40-55% of direct cost for most jobs.
+    // (Description, LaborHrsMin, LaborHrsMax, MaterialMin, MaterialMax, MachineHrsMin, MachineHrsMax)
+    private static readonly (string Desc, decimal LaborMin, decimal LaborMax,
+        decimal MatMin, decimal MatMax, decimal MachMin, decimal MachMax)[] JobProfiles =
+    {
+        ("16ga mild steel brackets, qty 50, laser cut and brake formed",      12, 18,  1000,  1500,  3,  5),
+        ("Stainless steel enclosure panels, 14ga, welded assembly",           40, 55,  5000,  7500,  8, 12),
+        ("Aluminum mounting plates, 0.125\" thick, CNC punched",              8, 14,   900,  1400,  4,  7),
+        ("Galvanized ductwork sections, 20ga, roll formed and seamed",       25, 35,  2500,  3500,  6, 10),
+        ("Stainless steel handrail components, tube and plate",              35, 50,  4000,  6000,  5,  8),
+        ("Mild steel structural gussets, 3/8\" plate, plasma cut",           10, 16,  2000,  3000,  5,  8),
+        ("Aluminum heat sink extrusion brackets, machined and deburred",     15, 22,  1800,  2800,  8, 12),
+        ("Copper bus bar connectors, precision sheared and drilled",          6, 10,  1800,  2800,  3,  5),
+        ("Mild steel tool cabinet frames, welded and powder coat ready",     30, 45,  2500,  3800,  4,  6),
+        ("Stainless surgical tray lids, mirror finish, laser cut",           20, 30,  3200,  4800,  6, 10),
+        ("Mild steel conveyor side rails, 10ga, bent and welded",            25, 40,  2800,  4200,  6,  9),
+        ("Aluminum electronic chassis, 0.060\" sheet, complex bends",        18, 28,  1200,  1800,  5,  8),
+        ("Galvanized HVAC transition pieces, custom layout",                 20, 30,  1800,  2800,  4,  7),
+        ("Stainless kitchen hood panels, 18ga, welded corners",              30, 45,  4500,  6500,  5,  8),
+        ("Mild steel machine guards, expanded metal and frame",              15, 25,  1500,  2200,  3,  5),
+        ("Aluminum signage blanks, flat sheet, deburred edges",               4,  8,   600,  1000,  2,  4),
+        ("Stainless wall cladding panels, #4 finish, drilled",               20, 30,  4500,  6800,  4,  6),
+        ("Mild steel pipe saddle supports, heavy plate",                     12, 20,  2200,  3400,  4,  6),
+        ("Aluminum cable tray sections, perforated and bent",                15, 22,  1500,  2200,  5,  8),
+        ("Copper ground straps, precision cut and formed",                    4,  8,  1800,  2800,  2,  4),
+        ("Steel stair stringer assemblies, 3/8\" plate, welded",             45, 65,  5000,  7500,  8, 12),
+        ("Stainless pharmaceutical tank baffles, electropolished",           35, 50,  6000,  9000,  6, 10),
+        ("Aluminum aerospace brackets, tight-tolerance CNC",                 25, 40,  3000,  4800, 10, 16),
+        ("Mild steel loading dock bumper guards, 1/4\" plate",               15, 25,  1800,  2800,  4,  6),
+    };
+
+    // Well-run shop attracts industrial/commercial customers
+    private static readonly string[] PrecisionCustomers =
+    {
+        "Cascade Structural", "Pacific Rim Manufacturing", "Olympic Steel Systems",
+        "Puget Sound Mechanical", "Evergreen Industrial", "Summit Engineering",
+        "Columbia Precision", "Northwest Aerospace"
+    };
+
+    // Struggling shop takes whatever work walks in the door
+    private static readonly string[] BudgetCustomers =
+    {
+        "ABC Fabrication", "Metro Industries", "Smith & Sons",
+        "Quick Fix Mechanical", "Valley Sheet Metal", "Sunrise Construction"
+    };
+
     public DbSeeder(AppDbContext db, UserManager<AppUser> userManager, string? webRootPath = null)
     {
         _db = db;
@@ -64,13 +111,17 @@ public class DbSeeder
         tenant.TenantId = tenant.Id;
         _db.Tenants.Add(tenant);
 
+        // Industry benchmarks:
+        // Well-run shop: $95/hr labor, $175/hr machine, 18% overhead, targets 25% gross margin
+        // Struggling shop: $68/hr labor (undercharges to win bids), $130/hr machine (older equipment),
+        //   12% overhead (underestimates — real overhead is probably 20%+), targets 15% but rarely hits it
         var settings = new TenantSettings
         {
             TenantId = tenant.Id,
-            DefaultLaborRate = 85m,
-            DefaultMachineRate = 175m,
-            DefaultOverheadPercent = 15m,
-            TargetMarginPercent = 20m
+            DefaultLaborRate = profitable ? 95m : 68m,
+            DefaultMachineRate = profitable ? 175m : 130m,
+            DefaultOverheadPercent = profitable ? 30m : 20m,
+            TargetMarginPercent = profitable ? 25m : 15m
         };
         _db.TenantSettings.Add(settings);
 
@@ -92,26 +143,24 @@ public class DbSeeder
             await _userManager.AddToRoleAsync(user, role.ToString());
             await _userManager.AddClaimAsync(user,
                 new System.Security.Claims.Claim("TenantId", tenant.Id.ToString()));
+            await _userManager.AddClaimAsync(user,
+                new System.Security.Claims.Claim("FullName", fullName));
             createdUsers[email] = user;
         }
 
         await _db.SaveChangesAsync();
 
-        var customers = new[]
-        {
-            "ABC Fabrication", "Metro Industries", "Smith & Sons",
-            "Global Steel Co", "Apex Manufacturing", "Northwest Metals",
-            "Cascade Structural", "Pacific Rim Fab"
-        };
+        var customers = profitable ? PrecisionCustomers : BudgetCustomers;
 
         var now = DateTime.UtcNow;
         int jobCount = profitable ? 24 : 16;
-        var laborRate = 85m;
-        var machineRate = 175m;
-        var overheadPct = 15m;
+        var laborRate = settings.DefaultLaborRate;
+        var machineRate = settings.DefaultMachineRate;
+        var overheadPct = settings.DefaultOverheadPercent;
 
         for (int i = 0; i < jobCount; i++)
         {
+            var profile = JobProfiles[i % JobProfiles.Length];
             var customer = customers[_rng.Next(customers.Length)];
 
             // Spread jobs across the last 6 months for monthly revenue distribution
@@ -121,8 +170,9 @@ public class DbSeeder
             var job = new Job
             {
                 JobNumber = $"JOB-{(i + 1):D4}",
+                Slug = GenerateSlug(),
                 CustomerName = customer,
-                Description = GetDescription(i),
+                Description = profile.Desc,
                 TenantId = tenant.Id,
                 CreatedAt = createdAt,
                 UpdatedAt = createdAt
@@ -146,10 +196,10 @@ public class DbSeeder
             _db.Jobs.Add(job);
             await _db.SaveChangesAsync();
 
-            // Create estimate with realistic sheetmetal fabrication pricing
-            var laborHours = RandDecimal(8, 80);
-            var materialCost = RandDecimal(500, 12000);
-            var machineHours = RandDecimal(2, 30);
+            // Use profile-correlated costs instead of random ranges
+            var laborHours = RandDecimal(profile.LaborMin, profile.LaborMax);
+            var materialCost = RandDecimal(profile.MatMin, profile.MatMax);
+            var machineHours = RandDecimal(profile.MachMin, profile.MachMax);
 
             var laborCost = laborHours * laborRate;
             var machineCost = machineHours * machineRate;
@@ -157,12 +207,14 @@ public class DbSeeder
             var overhead = subtotal * (overheadPct / 100m);
             var totalEst = subtotal + overhead;
 
-            // Set margins: profitable shop marks up more aggressively
+            // Margin multipliers based on industry benchmarks:
+            // Well-run shop: 25-35% gross margin (multiplier 1.30-1.55)
+            // Struggling shop: 9-20% gross margin (multiplier 1.10-1.25) — undercharges to win bids
             decimal marginMultiplier;
             if (profitable)
-                marginMultiplier = 1.25m + (decimal)(_rng.NextDouble() * 0.25); // 25-50% margin
+                marginMultiplier = 1.30m + (decimal)(_rng.NextDouble() * 0.25);
             else
-                marginMultiplier = 1.10m + (decimal)(_rng.NextDouble() * 0.20); // 10-30% margin
+                marginMultiplier = 1.10m + (decimal)(_rng.NextDouble() * 0.15);
 
             var quotePrice = Math.Round(totalEst * marginMultiplier, 2);
 
@@ -185,22 +237,34 @@ public class DbSeeder
             };
             _db.JobEstimates.Add(estimate);
 
-            // Create actuals for completed/invoiced jobs
+            // Create actuals for completed/invoiced jobs with per-component variance
             if (job.Status == JobStatus.Completed || job.Status == JobStatus.Invoiced)
             {
-                decimal varianceFactor;
+                decimal actLaborHours, actMaterialCost, actMachineHours;
+
                 if (profitable)
-                    varianceFactor = 0.88m + (decimal)(_rng.NextDouble() * 0.20); // -12% to +8% variance
+                {
+                    // Well-run shop: estimate vs actual variance ±5-10% (industry target)
+                    // Good labor estimates, tight material control (low scrap), efficient machine use
+                    actLaborHours = Math.Round(laborHours * (0.92m + (decimal)(_rng.NextDouble() * 0.16)), 2);     // 0.92-1.08
+                    actMaterialCost = Math.Round(materialCost * (0.95m + (decimal)(_rng.NextDouble() * 0.10)), 2); // 0.95-1.05 (good nesting, 5% scrap)
+                    actMachineHours = Math.Round(machineHours * (0.90m + (decimal)(_rng.NextDouble() * 0.15)), 2); // 0.90-1.05
+                }
                 else
-                    varianceFactor = 0.95m + (decimal)(_rng.NextDouble() * 0.45); // -5% to +40% variance
+                {
+                    // Struggling shop: 20-30%+ estimate variance (industry reality without tracking)
+                    // Labor always runs over (bad estimates), material waste from poor nesting (10-20% scrap)
+                    actLaborHours = Math.Round(laborHours * (1.05m + (decimal)(_rng.NextDouble() * 0.35)), 2);     // 1.05-1.40 (always over)
+                    actMaterialCost = Math.Round(materialCost * (0.95m + (decimal)(_rng.NextDouble() * 0.30)), 2); // 0.95-1.25 (waste/scrap)
+                    actMachineHours = Math.Round(machineHours * (0.90m + (decimal)(_rng.NextDouble() * 0.25)), 2); // 0.90-1.15
 
-                // Make some jobs dramatically over budget for the struggling shop
-                if (!profitable && i % 4 == 0)
-                    varianceFactor = 1.25m + (decimal)(_rng.NextDouble() * 0.25); // 25-50% over
-
-                var actLaborHours = Math.Round(laborHours * (0.85m + (decimal)(_rng.NextDouble() * 0.35)), 2);
-                var actMaterialCost = Math.Round(materialCost * varianceFactor, 2);
-                var actMachineHours = Math.Round(machineHours * (0.80m + (decimal)(_rng.NextDouble() * 0.40)), 2);
+                    // Every 3rd job has a major overrun: rework, scope creep, or blown estimate
+                    if (i % 3 == 0)
+                    {
+                        actLaborHours = Math.Round(actLaborHours * 1.25m, 2);
+                        actMaterialCost = Math.Round(actMaterialCost * 1.15m, 2);
+                    }
+                }
 
                 var actLaborCost = actLaborHours * laborRate;
                 var actMachineCost = actMachineHours * machineRate;
@@ -367,36 +431,12 @@ public class DbSeeder
         await _db.SaveChangesAsync();
     }
 
-    private string GetDescription(int index)
+    private string GenerateSlug()
     {
-        var descriptions = new[]
-        {
-            "16ga mild steel brackets, qty 50, laser cut and brake formed",
-            "Stainless steel enclosure panels, 14ga, welded assembly",
-            "Aluminum mounting plates, 0.125\" thick, CNC punched",
-            "Galvanized ductwork sections, 20ga, roll formed and seamed",
-            "Stainless steel handrail components, tube and plate",
-            "Mild steel structural gussets, 3/8\" plate, plasma cut",
-            "Aluminum heat sink extrusion brackets, machined and deburred",
-            "Copper bus bar connectors, precision sheared and drilled",
-            "Mild steel tool cabinet frames, welded and powder coat ready",
-            "Stainless surgical tray lids, mirror finish, laser cut",
-            "Mild steel conveyor side rails, 10ga, bent and welded",
-            "Aluminum electronic chassis, 0.060\" sheet, complex bends",
-            "Galvanized HVAC transition pieces, custom layout",
-            "Stainless kitchen hood panels, 18ga, welded corners",
-            "Mild steel machine guards, expanded metal and frame",
-            "Aluminum signage blanks, flat sheet, deburred edges",
-            "Stainless wall cladding panels, #4 finish, drilled",
-            "Mild steel pipe saddle supports, heavy plate",
-            "Aluminum cable tray sections, perforated and bent",
-            "Copper ground straps, precision cut and formed",
-            "Steel stair stringer assemblies, 3/8\" plate, welded",
-            "Stainless pharmaceutical tank baffles, electropolished",
-            "Aluminum aerospace brackets, tight-tolerance CNC",
-            "Mild steel loading dock bumper guards, 1/4\" plate"
-        };
-        return descriptions[index % descriptions.Length];
+        const string chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+        return new string(Enumerable.Range(0, 8)
+            .Select(_ => chars[_rng.Next(chars.Length)])
+            .ToArray());
     }
 
     private decimal RandDecimal(decimal min, decimal max)

@@ -1,42 +1,30 @@
 # Feature 4.3 — AI Prompt Engineering
 
-**Epic:** Epic 4 — AI-Powered Quoting (Claude Integration)
-**Status:** Pending
-**Priority:** High
-**Estimated Effort:** Medium
+**Epic:** Epic 4 — AI-Powered Quoting
+**Status:** Complete
 
 ---
 
 ## User Story
 
 **As a** developer,
-**I want** carefully engineered prompts that leverage Claude's domain knowledge of sheetmetal fabrication,
-**so that** the AI generates realistic, structured cost estimates that estimators can trust and refine.
+**I want** carefully engineered prompts that leverage Claude's domain knowledge,
+**so that** the AI generates realistic, structured cost estimates.
 
 ---
 
-## Acceptance Criteria
+## Implementation
 
-- [ ] System prompt establishes Claude as a sheetmetal fabrication estimating expert
-- [ ] Prompt includes the tenant's default rates as context
-- [ ] Prompt requests a structured JSON response with specific fields
-- [ ] Response includes: estimated hours, costs, suggested quote price, reasoning, assumptions, confidence level
-- [ ] Response JSON schema is well-defined and consistently parseable
-- [ ] Prompt handles edge cases: unusual materials, very large/small quantities, complex assemblies
-- [ ] Prompt versioning: system prompt is stored as a constant or config for easy iteration
-- [ ] AI response is validated against the expected schema before use
+### PromptTemplates (`Infrastructure/Services/PromptTemplates.cs`)
 
----
-
-## Prompt Structure
-
-### System Prompt
+**System Prompt (constant):**
 ```
-You are a sheetmetal fabrication estimating expert with 20+ years of experience.
-You provide cost estimates for custom metal fabrication jobs including laser cutting,
-brake forming, welding, and finishing operations.
+You are an expert sheetmetal fabrication estimator with 20+ years of experience...
+You MUST respond with ONLY a JSON object (no markdown, no explanation outside JSON).
+```
 
-Provide your estimates in the following JSON format:
+**Required JSON schema:**
+```json
 {
   "estimatedLaborHours": <number>,
   "estimatedMaterialCost": <number>,
@@ -44,42 +32,36 @@ Provide your estimates in the following JSON format:
   "overheadPercent": <number>,
   "suggestedQuotePrice": <number>,
   "reasoning": "<string>",
-  "assumptions": ["<string>", ...],
+  "assumptions": ["<string>"],
   "confidenceLevel": "Low" | "Medium" | "High"
 }
 ```
 
-### User Prompt (per request)
+**Rules enforced in prompt:**
+- All numeric values must be positive
+- Use the provided shop rates
+- Add 15-25% profit margin to suggested quote price
+- Consider material waste, setup time, and complexity
+
+**BuildUserPrompt method:**
+Formats job details into structured text:
 ```
 Estimate the following sheetmetal job:
 - Material: {type}, {thickness}
-- Dimensions: {L x W}
+- Part Dimensions: {dimensions}
+- Sheet Size: {sheetSize}
 - Quantity: {qty}
-- Operations: {comma-separated list}
+- Operations: {ops}
 - Complexity: {level}
 - Notes: {notes}
 
-Use these shop rates:
-- Labor: ${laborRate}/hr
-- Machine: ${machineRate}/hr
-- Overhead: {overheadPercent}%
+Shop rates:
+- Labor: ${rate}/hr
+- Machine: ${rate}/hr
+- Overhead: {pct}%
 ```
 
----
-
-## Technical Notes
-
-- Store prompts as constants in a `PromptTemplates` class or in configuration
-- Use string interpolation or a template engine to build the user prompt
-- JSON parsing: use `System.Text.Json` to deserialize the AI response
-- Validate response: check all required fields are present and numeric values are positive
-- If response doesn't parse, return a structured error and let the user retry or quote manually
-- Consider logging the full prompt + response for debugging and quality improvement
-- The `AIPromptSnapshot` field on `JobEstimate` stores the complete prompt + response
-
----
-
-## Response DTO
+### AIQuoteResponse DTO (`Core/DTOs/AIQuoteResponse.cs`)
 
 ```csharp
 public class AIQuoteResponse
@@ -89,27 +71,25 @@ public class AIQuoteResponse
     public decimal EstimatedMachineHours { get; set; }
     public decimal OverheadPercent { get; set; }
     public decimal SuggestedQuotePrice { get; set; }
-    public string Reasoning { get; set; }
-    public List<string> Assumptions { get; set; }
-    public string ConfidenceLevel { get; set; } // "Low", "Medium", "High"
+    public string Reasoning { get; set; } = string.Empty;
+    public List<string> Assumptions { get; set; } = new();
+    public string ConfidenceLevel { get; set; } = "Medium";
 }
 ```
 
----
+### Response Parsing
 
-## Dependencies
-
-- Feature 4.1 (Claude API Client Service)
-- Feature 3.4 (Tenant Settings — for shop rates in prompt)
+- `System.Text.Json` with `JsonSerializerOptions { PropertyNameCaseInsensitive = true }`
+- Strips markdown code fences before parsing
+- Returns null + error if JSON is invalid
 
 ---
 
 ## Definition of Done
 
-- [ ] System prompt and user prompt templates defined
-- [ ] Prompts produce consistent, parseable JSON responses from Claude
-- [ ] Response DTO created and JSON deserialization works
-- [ ] Edge cases handled (unparseable response, missing fields)
-- [ ] Prompt snapshot saved for auditing
-- [ ] At least 3 test prompts run with reasonable results
-- [ ] Prompt templates stored in a maintainable location (not inline strings)
+- [x] System prompt establishes sheetmetal domain expertise
+- [x] Structured JSON response schema enforced
+- [x] BuildUserPrompt formats job details + shop rates
+- [x] AIQuoteResponse DTO with all fields
+- [x] Prompt snapshot stored for audit
+- [x] Prompts stored in PromptTemplates class (not inline)

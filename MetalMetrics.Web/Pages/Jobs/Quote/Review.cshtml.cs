@@ -23,7 +23,7 @@ public class ReviewModel : PageModel
 
     public string JobNumber { get; set; } = string.Empty;
     public string CustomerName { get; set; } = string.Empty;
-    public Guid JobId { get; set; }
+    public string JobSlug { get; set; } = string.Empty;
     public AIQuoteResponse AISuggestion { get; set; } = new();
 
     [BindProperty]
@@ -70,7 +70,7 @@ public class ReviewModel : PageModel
         public decimal QuotePrice { get; set; }
     }
 
-    public IActionResult OnGet(Guid jobId)
+    public IActionResult OnGet(string slug)
     {
         var responseJson = TempData["AIResponse"] as string;
         var promptSnapshot = TempData["AIPromptSnapshot"] as string;
@@ -78,13 +78,13 @@ public class ReviewModel : PageModel
 
         if (string.IsNullOrEmpty(responseJson))
         {
-            return RedirectToPage("AI", new { jobId });
+            return RedirectToPage("AI", new { slug });
         }
 
         var aiResponse = JsonSerializer.Deserialize<AIQuoteResponse>(responseJson);
         if (aiResponse == null)
         {
-            return RedirectToPage("AI", new { jobId });
+            return RedirectToPage("AI", new { slug });
         }
 
         // Re-read request to get rates
@@ -95,7 +95,7 @@ public class ReviewModel : PageModel
         }
 
         AISuggestion = aiResponse;
-        JobId = jobId;
+        JobSlug = slug;
         PromptSnapshot = promptSnapshot ?? string.Empty;
 
         // Pre-populate editable fields with AI suggestions
@@ -117,12 +117,12 @@ public class ReviewModel : PageModel
         return Page();
     }
 
-    public async Task<IActionResult> OnPostAsync(Guid jobId)
+    public async Task<IActionResult> OnPostAsync(string slug)
     {
-        var job = await _jobService.GetByIdAsync(jobId);
+        var job = await _jobService.GetBySlugAsync(slug);
         if (job == null) return NotFound();
 
-        JobId = jobId;
+        JobSlug = slug;
         JobNumber = job.JobNumber;
         CustomerName = job.CustomerName;
 
@@ -140,7 +140,7 @@ public class ReviewModel : PageModel
 
         var estimate = new JobEstimate
         {
-            JobId = jobId,
+            JobId = job.Id,
             EstimatedLaborHours = Input.EstimatedLaborHours,
             LaborRate = Input.LaborRate,
             EstimatedMaterialCost = Input.EstimatedMaterialCost,
@@ -156,6 +156,6 @@ public class ReviewModel : PageModel
         await _quoteService.CreateAsync(estimate);
 
         TempData["Success"] = $"AI-assisted quote saved for {job.JobNumber}.";
-        return RedirectToPage("/Jobs/Details", new { id = jobId });
+        return RedirectToPage("/Jobs/Details", new { slug = job.Slug });
     }
 }

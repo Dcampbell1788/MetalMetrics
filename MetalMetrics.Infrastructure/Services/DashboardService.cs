@@ -1,4 +1,5 @@
 using MetalMetrics.Core.DTOs;
+using MetalMetrics.Core.Enums;
 using MetalMetrics.Core.Interfaces;
 using MetalMetrics.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -62,6 +63,22 @@ public class DashboardService : IDashboardService
         if (completedWithActuals.Count > 0)
             avgMargin /= completedWithActuals.Count;
 
+        var totalRevenue = completedWithActuals.Sum(j => j.Actuals!.ActualRevenue);
+
+        var inProgressCount = await _db.Jobs
+            .Where(j => j.TenantId == tenantId && j.Status == JobStatus.InProgress)
+            .CountAsync();
+
+        var quotedCount = await _db.Jobs
+            .Where(j => j.TenantId == tenantId && j.Status == JobStatus.Quoted)
+            .CountAsync();
+
+        var inProgressWithEstimates = await _db.Jobs
+            .Include(j => j.Estimate)
+            .Where(j => j.TenantId == tenantId && j.Status == JobStatus.InProgress && j.Estimate != null)
+            .ToListAsync();
+        var inProgressEstimatedValue = inProgressWithEstimates.Sum(j => j.Estimate!.QuotePrice);
+
         return new DashboardKpiDto
         {
             TotalJobs = allJobs,
@@ -69,7 +86,11 @@ public class DashboardService : IDashboardService
             AverageMarginPercent = avgMargin,
             JobsOverBudget = overBudget,
             RevenueThisMonth = revenueThisMonth,
-            TargetMarginPercent = targetMargin
+            TargetMarginPercent = targetMargin,
+            TotalRevenue = totalRevenue,
+            InProgressCount = inProgressCount,
+            QuotedCount = quotedCount,
+            InProgressEstimatedValue = inProgressEstimatedValue
         };
     }
 
@@ -94,6 +115,7 @@ public class DashboardService : IDashboardService
             {
                 JobId = j.Id,
                 JobNumber = j.JobNumber,
+                Slug = j.Slug,
                 CustomerName = j.CustomerName,
                 TotalEstimatedCost = j.Estimate!.TotalEstimatedCost,
                 TotalActualCost = j.Actuals.TotalActualCost,
@@ -101,7 +123,8 @@ public class DashboardService : IDashboardService
                 CompletedAt = j.CompletedAt!.Value,
                 IsProfitable = j.Actuals.ActualRevenue > j.Actuals.TotalActualCost,
                 QuotePrice = j.Estimate!.QuotePrice,
-                Status = j.Status.ToString()
+                Status = j.Status.ToString(),
+                ActualRevenue = j.Actuals.ActualRevenue
             };
         }).ToList();
     }
@@ -151,10 +174,10 @@ public class DashboardService : IDashboardService
         if (jobs.Count == 0)
             return new List<CategoryVarianceDto>();
 
-        var laborVariances = new List<decimal>();
-        var materialVariances = new List<decimal>();
-        var machineVariances = new List<decimal>();
-        var overheadVariances = new List<decimal>();
+        var laborVariances = new List<(decimal Percent, decimal Dollars)>();
+        var materialVariances = new List<(decimal Percent, decimal Dollars)>();
+        var machineVariances = new List<(decimal Percent, decimal Dollars)>();
+        var overheadVariances = new List<(decimal Percent, decimal Dollars)>();
 
         foreach (var job in jobs)
         {
@@ -163,20 +186,20 @@ public class DashboardService : IDashboardService
 
             var estLabor = est.EstimatedLaborHours * est.LaborRate;
             var actLabor = act.ActualLaborHours * act.LaborRate;
-            if (estLabor > 0) laborVariances.Add((actLabor - estLabor) / estLabor * 100);
+            if (estLabor > 0) laborVariances.Add(((actLabor - estLabor) / estLabor * 100, actLabor - estLabor));
 
             if (est.EstimatedMaterialCost > 0)
-                materialVariances.Add((act.ActualMaterialCost - est.EstimatedMaterialCost) / est.EstimatedMaterialCost * 100);
+                materialVariances.Add(((act.ActualMaterialCost - est.EstimatedMaterialCost) / est.EstimatedMaterialCost * 100, act.ActualMaterialCost - est.EstimatedMaterialCost));
 
             var estMachine = est.EstimatedMachineHours * est.MachineRate;
             var actMachine = act.ActualMachineHours * act.MachineRate;
-            if (estMachine > 0) machineVariances.Add((actMachine - estMachine) / estMachine * 100);
+            if (estMachine > 0) machineVariances.Add(((actMachine - estMachine) / estMachine * 100, actMachine - estMachine));
 
             var estSubtotal = estLabor + est.EstimatedMaterialCost + estMachine;
             var actSubtotal = actLabor + act.ActualMaterialCost + actMachine;
             var estOverhead = estSubtotal * (est.OverheadPercent / 100m);
             var actOverhead = actSubtotal * (act.OverheadPercent / 100m);
-            if (estOverhead > 0) overheadVariances.Add((actOverhead - estOverhead) / estOverhead * 100);
+            if (estOverhead > 0) overheadVariances.Add(((actOverhead - estOverhead) / estOverhead * 100, actOverhead - estOverhead));
         }
 
         var result = new List<CategoryVarianceDto>();
@@ -188,16 +211,54 @@ public class DashboardService : IDashboardService
         return result;
     }
 
-    private static void AddCategory(List<CategoryVarianceDto> list, string name, List<decimal> variances)
+    public async Task<List<AtRiskJobDto>> GetAtRiskJobsAsync(decimal thresholdPercent = 10)
+    {
+        var tenantId = _tenantProvider.TenantId;
+
+        var jobs = await _db.Jobs
+            .Include(j => j.Estimate)
+            .Include(j => j.Actuals)
+            .Where(j => j.TenantId == tenantId && j.Status == JobStatus.InProgress && j.Estimate != null && j.Actuals != null)
+            .ToListAsync();
+
+        var atRisk = new List<AtRiskJobDto>();
+        foreach (var job in jobs)
+        {
+            var estimatedCost = job.Estimate!.TotalEstimatedCost;
+            var actualCost = job.Actuals!.TotalActualCost;
+            if (estimatedCost <= 0) continue;
+
+            var overagePercent = (actualCost - estimatedCost) / estimatedCost * 100;
+            if (overagePercent > thresholdPercent)
+            {
+                atRisk.Add(new AtRiskJobDto
+                {
+                    JobId = job.Id,
+                    JobNumber = job.JobNumber,
+                    Slug = job.Slug,
+                    CustomerName = job.CustomerName,
+                    EstimatedCost = estimatedCost,
+                    ActualCost = actualCost,
+                    OveragePercent = overagePercent
+                });
+            }
+        }
+
+        return atRisk.OrderByDescending(j => j.OveragePercent).ToList();
+    }
+
+    private static void AddCategory(List<CategoryVarianceDto> list, string name, List<(decimal Percent, decimal Dollars)> variances)
     {
         if (variances.Count == 0) return;
-        var avg = variances.Average();
+        var avgPercent = variances.Average(v => v.Percent);
+        var avgDollars = variances.Average(v => v.Dollars);
         list.Add(new CategoryVarianceDto
         {
             Category = name,
-            AverageVariancePercent = avg,
-            Direction = avg > 0 ? "Underestimate" : "Overestimate",
-            JobCount = variances.Count
+            AverageVariancePercent = avgPercent,
+            Direction = avgPercent > 0 ? "Underestimate" : "Overestimate",
+            JobCount = variances.Count,
+            AverageDollarVariance = avgDollars
         });
     }
 }

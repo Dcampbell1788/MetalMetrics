@@ -44,6 +44,6 @@ public class CreateModel : PageModel
 
         var job = await _jobService.CreateAsync(Input.CustomerName, Input.Description);
         TempData["Success"] = $"Job {job.JobNumber} created successfully.";
-        return RedirectToPage("Details", new { id = job.Id });
+        return RedirectToPage("Details", new { slug = job.Slug });
     }
 }

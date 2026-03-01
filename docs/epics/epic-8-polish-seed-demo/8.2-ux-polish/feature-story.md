@@ -1,97 +1,75 @@
 # Feature 8.2 — UX Polish
 
 **Epic:** Epic 8 — Polish, Seed Data & Demo Prep
-**Status:** Pending
-**Priority:** Medium
-**Estimated Effort:** Medium
+**Status:** Complete
 
 ---
 
 ## User Story
 
-**As a** user of MetalMetrics,
-**I want** a polished, professional-looking interface with clear feedback and responsive design,
-**so that** the application feels trustworthy and is easy to use on any device.
+**As a** user,
+**I want** a polished, professional interface with clear feedback and responsive design,
+**so that** the application feels trustworthy and is easy to use.
 
 ---
 
-## Acceptance Criteria
+## Implementation
 
-- [ ] Loading spinners displayed on AI quote requests and any slow operations
-- [ ] Form validation messages shown for both client-side and server-side errors
-- [ ] Responsive design works on desktop, tablet, and mobile viewports
-- [ ] Consistent color palette applied throughout:
-  - Green = profit / positive / success
-  - Red = loss / negative / error
-  - Blue = neutral / informational
-- [ ] Print-friendly CSS for the profitability report view
-- [ ] All interactive elements have hover states and focus indicators
-- [ ] Toast notifications for success/error feedback on actions
-- [ ] No broken layouts, overlapping elements, or horizontal scroll issues
-- [ ] Favicon and page titles set appropriately
+### Color Palette (`Web/wwwroot/css/site.css`)
 
----
+```css
+:root {
+  --mm-profit: #198754;    /* green — profit/success */
+  --mm-loss: #dc3545;      /* red — loss/error */
+  --mm-neutral: #0d6efd;   /* blue — info */
+  --mm-warning: #ffc107;   /* yellow — warning */
+  --mm-gold: #ffc107;      /* gold — accents */
+}
+```
 
-## Polish Checklist
+### Utility Classes
 
-### Visual Consistency
-- [ ] Consistent spacing and margins across all pages
-- [ ] Consistent typography (headings, body text, labels)
-- [ ] Consistent button styles (primary, secondary, danger)
-- [ ] Consistent table styles across job list, user list, reports
-
-### Feedback & Loading
-- [ ] Loading spinner on AI quote submission
-- [ ] Disabled submit buttons during form submission (prevent double-submit)
-- [ ] Success toast after saving a job, quote, or actuals
-- [ ] Error toast for failed operations
-- [ ] Confirmation dialogs for destructive actions (delete, status change)
+- `.text-profit` / `.text-loss` — text color
+- `.bg-profit` / `.bg-loss` — background with white text
+- Card headers: `.bg-dark` with gold bottom border
+- Feature cards: hover lift effect
+- Clickable cards: `a .card.shadow-sm` gets `translateY(-2px)` on hover
 
 ### Responsive Design
-- [ ] Nav collapses to hamburger menu on mobile
-- [ ] Tables scroll horizontally on mobile (not break layout)
-- [ ] Forms stack vertically on mobile
-- [ ] Charts resize appropriately
-- [ ] Quick Entry form (Feature 5.3) tested on mobile viewport
 
-### Print
-- [ ] Print stylesheet hides navigation and non-essential UI
-- [ ] Profitability report prints cleanly on a single page
-- [ ] Charts print with visible colors (no transparency issues)
+- Bootstrap 5 responsive grid throughout
+- Nav collapses to hamburger on mobile
+- Tables wrapped in `.table-responsive` for horizontal scroll
+- Forms stack vertically on small viewports
+- Charts are responsive (`responsive: true` in Chart.js config)
+- Quick Entry form designed for mobile touch targets
 
----
+### Feedback
 
-## Technical Notes
+- TempData notifications: `TempData["Success"]`, `TempData["Error"]`, `TempData["Warning"]`
+- Rendered via `_Notifications.cshtml` partial as Bootstrap alerts
+- Loading spinner on AI quote submission (disabled button + spinner)
+- jQuery validation for client-side form validation
 
-- Use Bootstrap 5 utility classes for most responsive work
-- Loading spinner: Bootstrap spinner component or custom CSS animation
-- Toast notifications: Bootstrap toast component or a lightweight library
-- Print CSS: `@media print { ... }` stylesheet
-- Consider a `site.css` override file for custom brand colors
-- Color variables:
-  ```css
-  :root {
-    --mm-profit: #28a745;
-    --mm-loss: #dc3545;
-    --mm-neutral: #007bff;
-    --mm-warning: #ffc107;
-  }
-  ```
+### Print Styles
 
----
-
-## Dependencies
-
-- All feature pages must be built first (Epics 1–7)
+```css
+@media print {
+  .navbar, .footer, .btn, form, .no-print { display: none !important; }
+  .card { border: 1px solid #dee2e6 !important; box-shadow: none !important; }
+  .text-profit { color: #198754 !important; print-color-adjust: exact; }
+  .text-loss { color: #dc3545 !important; print-color-adjust: exact; }
+  canvas { max-width: 100% !important; }
+}
+```
 
 ---
 
 ## Definition of Done
 
-- [ ] All pages visually consistent
-- [ ] Loading states work on AI and slow operations
-- [ ] Form validation messages display correctly
-- [ ] Responsive design verified on desktop, tablet, and mobile
-- [ ] Print profitability report works
-- [ ] Color palette consistent throughout
-- [ ] Manual visual review of all pages
+- [x] Consistent color palette across all pages
+- [x] Responsive design (desktop, tablet, mobile)
+- [x] TempData notification system
+- [x] Print-friendly CSS for reports
+- [x] Loading states on AI operations
+- [x] Clickable card hover effects

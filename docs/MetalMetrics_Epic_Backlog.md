@@ -1,9 +1,8 @@
 # MetalMetrics — Epic & Feature Backlog
 
-**Team:** MetalMetrics
-**Event:** St. Joseph Vibeathon — "Did We Make Money?"
-**Sprint Window:** 24 Hours
-**Tech Stack:** .NET 8 Razor Pages · C# · SQLite · EF Core · Claude AI API
+**Project:** MetalMetrics — Sheetmetal Fabrication Job Profitability Tracker
+**Tech Stack:** .NET 8 Razor Pages, C#, SQLite, EF Core 8, ASP.NET Identity, Claude AI API, Chart.js v4, Bootstrap 5
+**Status:** All 8 Epics Complete (MVP v1.0)
 
 ---
 
@@ -13,425 +12,316 @@
 ┌─────────────────────────────────────────────────────────────┐
 │                     RAZOR PAGES UI                          │
 │  Dashboard · Jobs · Quotes · Actuals · Admin · Reports      │
+│  Notes · TimeEntries · Assignments · Profitability          │
 ├─────────────────────────────────────────────────────────────┤
 │                    APPLICATION SERVICES                      │
-│  QuotingService · JobService · ActualsService · AIService    │
-│  ProfitabilityEngine · TenantService · AuthService           │
+│  JobService · QuoteService · ActualsService · AIQuoteService│
+│  ProfitabilityService · DashboardService · ReportsService   │
+│  JobAssignmentService · TimeEntryService · JobNoteService   │
 ├─────────────────────────────────────────────────────────────┤
-│                     DATA / EF CORE                           │
-│  SQLite · Multi-Tenant DbContext · Entities · Configs        │
+│                     DATA / EF CORE                          │
+│  SQLite · Multi-Tenant AppDbContext · 10 Entities           │
+│  Global Query Filter · Auto-Audit · Auto-TenantId          │
 ├─────────────────────────────────────────────────────────────┤
-│                     EXTERNAL SERVICES                        │
-│  Claude AI API (Structured Quoting)                          │
+│                     EXTERNAL SERVICES                       │
+│  Claude AI API (IHttpClientFactory, retry/backoff)          │
+│  Chart.js v4 + chartjs-plugin-annotation (CDN)             │
 └─────────────────────────────────────────────────────────────┘
+```
+
+### Solution Structure
+
+```
+MetalMetrics/
+├── MetalMetrics.Core/              Entities, DTOs, Enums, Interfaces
+├── MetalMetrics.Infrastructure/    EF Core (SQLite), Services, Migrations, Seeder
+├── MetalMetrics.Web/               Razor Pages, Program.cs, wwwroot
+├── MetalMetrics.Tests/             MSTest unit tests (20 tests)
+└── docs/                           Epic & feature documentation
 ```
 
 ### Multi-Tenant Strategy
 
-- **Row-level tenancy** via `TenantId` on every entity
-- Global query filter in `DbContext` automatically scopes all queries
-- `ITenantProvider` resolves tenant from the authenticated user's claims
-- Simplest approach for SQLite + hackathon timeline
-
-### Role Hierarchy
-
-| Role              | Jobs | Quotes | Actuals | Reports | Admin/Billing |
-|-------------------|------|--------|---------|---------|---------------|
-| Admin             | ✅   | ✅     | ✅      | ✅      | ✅            |
-| Owner             | ✅   | ✅     | ✅      | ✅      | ✅            |
-| ProjectManager    | ✅   | ✅     | ✅      | ✅      | ❌            |
-| Foreman           | ✅   | ✅     | ✅      | ✅      | ❌            |
-| Estimator         | 👁️   | ✅     | ❌      | ❌      | ❌            |
-| Journeyman        | 👁️   | ❌     | ✅      | ❌      | ❌            |
-
----
-
-## Sprint Timeline (Suggested 24-Hour Breakdown)
-
-| Phase          | Hours | Epics                                      |
-|----------------|-------|--------------------------------------------|
-| **Foundation** | 0–4   | Epic 1 (Scaffold) + Epic 2 (Auth/Tenant)   |
-| **Core Data**  | 4–8   | Epic 3 (Jobs + Quoting Data Model)         |
-| **AI + Entry** | 8–14  | Epic 4 (AI Quoting) + Epic 5 (Actuals)     |
-| **Insights**   | 14–20 | Epic 6 (Profitability) + Epic 7 (Dashboard) |
-| **Polish**     | 20–24 | Epic 8 (Polish, Demo Prep, Bug Fixes)       |
-
-### Cut Lines (If Running Behind)
-
-- **Must Ship:** Epics 1–6 (core loop: quote → actuals → profit/loss)
-- **High Value:** Epic 7 (dashboard charts — huge demo impact)
-- **Nice to Have:** Epic 8 polish items, advanced AI features
-
----
-
-## EPIC 1 — Project Scaffold & Infrastructure
-
-**Goal:** Bootable .NET 8 Razor Pages app with SQLite, EF Core, and project structure.
-
-### Features
-
-#### 1.1 Solution & Project Structure
-- Create solution `MetalMetrics.sln`
-- Projects: `MetalMetrics.Web` (Razor Pages), `MetalMetrics.Core` (domain/services/interfaces), `MetalMetrics.Infrastructure` (EF Core, AI client), `MetalMetrics.Tests` (MSTest)
-- Configure `.editorconfig`, `global.json`
-
-#### 1.2 EF Core + SQLite Setup
-- Install EF Core SQLite packages
-- Create `AppDbContext` with multi-tenant global query filter
-- Create `ITenantProvider` interface + implementation
-- Initial migration + database seeding script
-- Connection string in `appsettings.json`
-
-#### 1.3 Base Entity Model
-- `BaseEntity` abstract class: `Id (Guid)`, `TenantId (Guid)`, `CreatedAt`, `UpdatedAt`
-- `IAuditable` interface for automatic timestamp setting
-- `SaveChangesAsync` override for audit fields
-
-#### 1.4 Shared Layout & Navigation
-- `_Layout.cshtml` with responsive nav (role-aware menu items)
-- Branding: "MetalMetrics" logo/text
-- Toast/notification partial for success/error messages
-- CSS framework decision (Bootstrap 5 — ships with .NET template)
-
----
-
-## EPIC 2 — Authentication, Tenancy & Role Management
-
-**Goal:** Users can register a company (tenant), log in, and invite team members with roles.
-
-### Features
-
-#### 2.1 ASP.NET Identity Setup
-- Extend `IdentityUser` → `AppUser` with `TenantId`, `Role`, `FullName`
-- Configure Identity with SQLite store
-- Cookie authentication scheme
-
-#### 2.2 Tenant Registration (Company Onboarding)
-- **Page:** `/Register`
-- Form: Company Name, Owner Name, Email, Password
-- Creates `Tenant` entity + first `AppUser` as Admin
-- Auto-login after registration
-
-#### 2.3 Login / Logout
-- **Page:** `/Login`, `/Logout`
-- Standard Identity login with email/password
-- Redirect to Dashboard on success
-
-#### 2.4 User Invitation & Role Assignment
-- **Page:** `/Admin/Users` (Admin/Owner only)
-- Invite user by email with assigned role
-- Roles: `Admin`, `Owner`, `ProjectManager`, `Foreman`, `Estimator`, `Journeyman`
-- Simple invite flow (pre-create user record, set temp password or invite link)
-
-#### 2.5 Role-Based Authorization
-- Custom `AuthorizationHandler` or policy-based auth
-- Page-level `[Authorize(Roles = "...")]` attributes
-- Navigation menu hides links based on role
-- `TenantProvider` reads `TenantId` from user claims
-
----
-
-## EPIC 3 — Job & Quote Management (Core Data)
-
-**Goal:** Create and manage jobs with structured cost estimates across all four categories.
-
-### Features
-
-#### 3.1 Tenant Entity
-- `Tenant`: `Id`, `CompanyName`, `CreatedAt`
-- One-to-many with `AppUser`, `Job`
-
-#### 3.2 Job Entity & CRUD
-- **Entity:** `Job`
-  - `Id`, `TenantId`, `JobNumber` (auto-gen), `CustomerName`, `Description`
-  - `Status` (enum: `Quoted`, `InProgress`, `Completed`, `Invoiced`)
-  - `CreatedAt`, `UpdatedAt`, `CompletedAt`
-- **Pages:** `/Jobs/Index`, `/Jobs/Create`, `/Jobs/Details/{id}`, `/Jobs/Edit/{id}`
-- List view with search, filter by status
-- Access: Admin, Owner, ProjectManager, Foreman, Estimator (read-only), Journeyman (read-only)
-
-#### 3.3 Quote / Estimate Entity
-- **Entity:** `JobEstimate`
-  - `Id`, `JobId`, `TenantId`
-  - `EstimatedLaborHours`, `LaborRate`
-  - `EstimatedMaterialCost` (sheet/plate cost)
-  - `EstimatedMachineHours`, `MachineRate`
-  - `OverheadPercent` (applied to subtotal)
-  - `TotalEstimatedCost` (computed)
-  - `QuotePrice` (what they charge the customer)
-  - `EstimatedMarginPercent` (computed)
-  - `AIGenerated` (bool), `AIPromptSnapshot` (JSON — what was sent to Claude)
-  - `CreatedBy`, `CreatedAt`
-- **Pages:** `/Jobs/{jobId}/Quote/Create`, `/Jobs/{jobId}/Quote/View`
-- Access: Admin, Owner, ProjectManager, Estimator
-
-#### 3.4 Cost Category Configuration (Tenant-Level Rates)
-- **Entity:** `TenantSettings`
-  - `DefaultLaborRate`, `DefaultMachineRate`, `DefaultOverheadPercent`
-- **Page:** `/Admin/Settings` (Admin/Owner only)
-- Pre-populates quote forms with tenant defaults
-
----
-
-## EPIC 4 — AI-Powered Quoting (Claude Integration)
-
-**Goal:** Estimator fills structured form, Claude AI suggests pricing based on sheetmetal domain knowledge.
-
-### Features
-
-#### 4.1 Claude API Client Service
-- `IAIQuoteService` interface
-- `ClaudeAIQuoteService` implementation
-- Reads API key from `appsettings.json` (or user secrets)
-- Structured prompt template for sheetmetal quoting
-- Rate limiting / error handling
-
-#### 4.2 Structured Quote Request Form
-- **Page:** `/Jobs/{jobId}/Quote/AI`
-- Form fields:
-  - Material type (dropdown: Mild Steel, Stainless, Aluminum, Galvanized, etc.)
-  - Material thickness (gauge or decimal inches)
-  - Part dimensions (L × W) or sheet size needed
-  - Quantity
-  - Operations required (checkboxes: Laser Cut, Brake/Bend, Punch, Weld, Deburr)
-  - Complexity level (Simple, Moderate, Complex)
-  - Any special notes (free text)
-- Submit → calls Claude API
-
-#### 4.3 AI Prompt Engineering
-- System prompt: "You are a sheetmetal fabrication estimating expert..."
-- Include tenant's default rates in the prompt context
-- Request structured JSON response:
-  ```json
-  {
-    "estimatedLaborHours": 4.5,
-    "estimatedMaterialCost": 285.00,
-    "estimatedMachineHours": 2.0,
-    "overheadPercent": 15,
-    "suggestedQuotePrice": 1250.00,
-    "reasoning": "...",
-    "assumptions": ["..."],
-    "confidenceLevel": "Medium"
-  }
-  ```
-- Parse response and pre-fill `JobEstimate` form
-
-#### 4.4 AI Quote Review & Acceptance
-- Display Claude's suggestions alongside the form
-- Show reasoning and assumptions
-- Estimator can adjust any values before saving
-- Track whether final quote used AI suggestions (`AIGenerated` flag)
-- Save prompt + response snapshot for auditing
-
----
-
-## EPIC 5 — Actuals Entry (Post-Job Tracking)
-
-**Goal:** After a job completes, record actual costs to compare against the estimate.
-
-### Features
-
-#### 5.1 Job Actuals Entity
-- **Entity:** `JobActuals`
-  - `Id`, `JobId`, `TenantId`
-  - `ActualLaborHours`, `LaborRate` (may differ from estimate)
-  - `ActualMaterialCost`
-  - `ActualMachineHours`, `MachineRate`
-  - `OverheadPercent`
-  - `TotalActualCost` (computed)
-  - `ActualRevenue` (what they actually invoiced/collected)
-  - `Notes`
-  - `EnteredBy`, `CreatedAt`, `UpdatedAt`
-
-#### 5.2 Actuals Entry Form
-- **Page:** `/Jobs/{jobId}/Actuals/Enter`
-- Pre-populate with estimated values as starting reference
-- Side-by-side: Estimate column | Actuals column
-- Real-time variance calculation as user types
-- Color coding: green (under estimate), red (over estimate)
-- Access: Admin, Owner, ProjectManager, Foreman, Journeyman
-
-#### 5.3 Quick Entry Mode (Journeyman Optimized)
-- **Page:** `/Jobs/{jobId}/Actuals/Quick`
-- Simplified mobile-friendly form
-- Only: Labor hours, Material cost, Machine hours, Notes
-- Big buttons, minimal fields
-- Auto-fills rates from tenant settings
-
-#### 5.4 Job Completion Workflow
-- "Mark as Completed" action on Job
-- Prompts to enter actuals if not yet entered
-- Updates `Job.Status` → `Completed`, sets `CompletedAt`
-- Validates that actuals exist before allowing status change to `Invoiced`
-
----
-
-## EPIC 6 — Profitability Engine & Per-Job Analysis
-
-**Goal:** One-click view showing whether a job made or lost money, broken down by category.
-
-### Features
-
-#### 6.1 Profitability Calculation Service
-- `IProfitabilityService`
-- Inputs: `JobEstimate` + `JobActuals`
-- Outputs: `JobProfitabilityReport`
-  ```
-  {
-    LaborVariance ($, %),
-    MaterialVariance ($, %),
-    MachineVariance ($, %),
-    OverheadVariance ($, %),
-    TotalEstimatedCost,
-    TotalActualCost,
-    QuotedPrice,
-    ActualRevenue,
-    EstimatedMargin ($, %),
-    ActualMargin ($, %),
-    MarginDrift ($, %),
-    OverallVerdict: "Profit" | "Loss" | "Break Even",
-    Warnings: []
-  }
-  ```
-
-#### 6.2 Per-Job Profitability View
-- **Page:** `/Jobs/{jobId}/Profitability`
-- Hero metric: ✅ PROFIT +$X,XXX or ❌ LOSS -$X,XXX
-- Stacked bar chart: Estimated vs Actual by category (Labor, Material, Machine, Overhead)
-- Red/green color coding for each category variance
-- Margin drift indicator
-- Warning badges (e.g., "Material cost exceeded estimate by 35%")
-- Access: Admin, Owner, ProjectManager
-
-#### 6.3 Margin Threshold Alerts
-- Configurable in `TenantSettings`: `TargetMarginPercent` (default: 20%)
-- Flag jobs where actual margin drops below threshold
-- Visual warning on job list and profitability view
-
----
-
-## EPIC 7 — Dashboard & Reporting
-
-**Goal:** At-a-glance overview of business health across all jobs.
-
-### Features
-
-#### 7.1 Main Dashboard
-- **Page:** `/Dashboard` (landing page after login)
-- KPI Cards (top row):
-  - Total Jobs (this month / all time)
-  - Average Margin %
-  - Jobs Over Budget (count)
-  - Revenue This Month
-- Access: Admin, Owner, ProjectManager, Foreman
-
-#### 7.2 Profitability Summary Chart
-- Bar chart: All completed jobs — Estimated vs Actual Cost
-- Color: Green bars (profitable), Red bars (loss)
-- Sortable by: Date, Margin %, Customer
-- Chart library: Chart.js via CDN (lightweight, no npm needed)
-
-#### 7.3 Margin Drift Trend
-- Line chart: Margin % over time (by job completion date)
-- Shows target margin threshold line
-- Helps spot if quoting accuracy is improving or degrading
-
-#### 7.4 Customer Profitability Breakdown
-- Table or chart: Profit/Loss by customer
-- "Which customers are actually profitable?"
-- Aggregates all jobs per customer
-
-#### 7.5 Category Variance Heatmap
-- Which cost category do you consistently underestimate?
-- Aggregated view: Average variance by Labor, Material, Machine, Overhead
-- Helps improve future quoting accuracy
-
----
-
-## EPIC 8 — Polish, Seed Data & Demo Prep
-
-**Goal:** Make it demo-ready with realistic data and professional UX.
-
-### Features
-
-#### 8.1 Seed Data Generator
-- Create 15–25 realistic sheetmetal jobs
-- Mix of profitable and unprofitable
-- Varied customers, materials, complexities
-- Pre-populated estimates and actuals
-- At least 2 demo tenants (companies)
-
-#### 8.2 UX Polish
-- Loading spinners on AI quote requests
-- Form validation messages (server + client)
-- Responsive design check (tablet/mobile for Journeyman view)
-- Consistent color palette: Green = profit, Red = loss, Blue = neutral
-- Print-friendly profitability report view
-
-#### 8.3 Error Handling & Edge Cases
-- Claude API timeout / failure graceful degradation
-- Empty states (no jobs yet, no actuals entered)
-- Prevent duplicate actuals entry
-- Handle division-by-zero in margin calculations
-
-#### 8.4 Demo Script Preparation
-- Happy path walkthrough:
-  1. Register company → set up rates
-  2. Create job → AI quote → accept quote
-  3. Enter actuals → view profitability → "Did we make money?"
-  4. Dashboard overview → customer insights
-- Have one "money lost" job highlighted for dramatic effect
-
----
-
-## Entity Relationship Diagram (Simplified)
+- **Row-level tenancy** via `TenantId` (Guid) on every `BaseEntity`
+- `AppDbContext.SaveChangesAsync()` auto-sets `TenantId` from `ITenantProvider` for new entities
+- `ITenantProvider` resolves tenant from the authenticated user's `TenantId` claim
+- No global query filter — tenant scoping done in service layer queries with `.Where(j => j.TenantId == tenantId)`
+- Unique indexes on `(TenantId, JobNumber)` and `(TenantId, Slug)` for Job entity
+
+### Role Hierarchy & Authorization Policies
+
+| Role           | Dashboard | Jobs | Quotes | Actuals | Reports | Admin |
+|----------------|-----------|------|--------|---------|---------|-------|
+| Admin          | Yes       | Full | Full   | Full    | Yes     | Yes   |
+| Owner          | Yes       | Full | Full   | Full    | Yes     | Yes   |
+| ProjectManager | Yes       | Full | Full   | Full    | Yes     | No    |
+| Foreman        | No        | Assigned | No | Full    | No      | No    |
+| Estimator      | No        | Assigned | Full | No    | No      | No    |
+| Journeyman     | No        | Assigned | No | Full    | No      | No    |
+
+**Authorization Policies (Program.cs):**
+- `AdminOnly` -> Admin, Owner
+- `CanManageJobs` -> Admin, Owner, ProjectManager, Foreman
+- `CanQuote` -> Admin, Owner, ProjectManager, Estimator
+- `CanEnterActuals` -> Admin, Owner, ProjectManager, Foreman
+- `CanViewReports` -> Admin, Owner, ProjectManager
+- `CanAssignJobs` -> Admin, Owner, ProjectManager, Foreman
+
+### Entity Relationship Diagram
 
 ```
 Tenant (1) ──── (*) AppUser
   │
-  ├──── (*) Job
-  │         ├──── (1) JobEstimate
-  │         └──── (1) JobActuals
+  ├──── (1) TenantSettings
   │
-  └──── (1) TenantSettings
+  └──── (*) Job
+              ├──── (0..1) JobEstimate
+              ├──── (0..1) JobActuals
+              ├──── (*) JobAssignment ──── AppUser
+              ├──── (*) JobTimeEntry ──── AppUser
+              └──── (*) JobNote
 ```
 
 ### Key Entities Summary
 
-| Entity          | Key Fields                                                        |
-|-----------------|-------------------------------------------------------------------|
-| `Tenant`        | CompanyName                                                       |
-| `AppUser`       | Email, FullName, Role, TenantId                                   |
-| `TenantSettings`| DefaultLaborRate, DefaultMachineRate, OverheadPercent, TargetMargin|
-| `Job`           | JobNumber, CustomerName, Description, Status                      |
-| `JobEstimate`   | LaborHrs, MaterialCost, MachineHrs, Rates, QuotePrice, AIGenerated|
-| `JobActuals`    | LaborHrs, MaterialCost, MachineHrs, Rates, ActualRevenue          |
+| Entity           | Key Fields                                                             |
+|------------------|------------------------------------------------------------------------|
+| `BaseEntity`     | Id (Guid), TenantId (Guid), CreatedAt, UpdatedAt (IAuditable)          |
+| `Tenant`         | CompanyName                                                            |
+| `AppUser`        | FullName, TenantId, Role (AppRole), extends IdentityUser               |
+| `TenantSettings` | DefaultLaborRate, DefaultMachineRate, DefaultOverheadPercent, TargetMarginPercent |
+| `Job`            | JobNumber, Slug, CustomerName, Description, Status, CompletedAt        |
+| `JobEstimate`    | LaborHrs, LaborRate, MaterialCost, MachineHrs, MachineRate, OverheadPct, TotalEstimatedCost, QuotePrice, EstimatedMarginPercent, AIGenerated, AIPromptSnapshot, CreatedBy |
+| `JobActuals`     | ActualLaborHrs, LaborRate, MaterialCost, ActualMachineHrs, MachineRate, OverheadPct, TotalActualCost, ActualRevenue, Notes, EnteredBy |
+| `JobAssignment`  | JobId, UserId, AssignedByUserId                                        |
+| `JobTimeEntry`   | JobId, UserId, HoursWorked, WorkDate, Notes                           |
+| `JobNote`        | JobId, UserId, AuthorName, Content, ImageFileName                      |
+
+### Key DTOs
+
+| DTO                       | Purpose                                    |
+|---------------------------|--------------------------------------------|
+| `AIQuoteRequest`          | Form input to Claude API                   |
+| `AIQuoteResponse`         | Parsed Claude JSON response                |
+| `JobSummaryDto`           | Dashboard chart data per completed job     |
+| `DashboardKpiDto`         | Top-level KPI metrics                      |
+| `JobProfitabilityReport`  | Detailed per-job P&L with variances        |
+| `VarianceDetail`          | Cost category variance (est/actual/$/%     |
+| `CustomerProfitabilityDto`| Revenue/cost/P&L/margin per customer       |
+| `CategoryVarianceDto`     | Avg variance % + $ per cost category       |
+| `AtRiskJobDto`            | InProgress jobs over budget threshold      |
+
+### Demo Credentials
+
+All passwords: `Demo123!`
+
+**Precision Metal Works** (profitable, 24 jobs, 10 employees):
+
+| Role           | Email                      |
+|----------------|----------------------------|
+| Owner          | mike@precisionmetal.demo   |
+| Admin          | karen@precisionmetal.demo  |
+| ProjectManager | dave@precisionmetal.demo   |
+| ProjectManager | lisa@precisionmetal.demo   |
+| Estimator      | rich@precisionmetal.demo   |
+| Foreman        | tony@precisionmetal.demo   |
+| Foreman        | brenda@precisionmetal.demo |
+| Journeyman     | jake@precisionmetal.demo   |
+| Journeyman     | sam@precisionmetal.demo    |
+| Journeyman     | cody@precisionmetal.demo   |
+
+**Budget Fabricators** (struggling, 16 jobs, 7 employees):
+
+| Role           | Email                  |
+|----------------|------------------------|
+| Owner          | daryl@budgetfab.demo   |
+| Admin          | janet@budgetfab.demo   |
+| ProjectManager | greg@budgetfab.demo    |
+| Estimator      | megan@budgetfab.demo   |
+| Foreman        | ray@budgetfab.demo     |
+| Journeyman     | tyler@budgetfab.demo   |
+| Journeyman     | nick@budgetfab.demo    |
 
 ---
 
-## Definition of Done (Per Feature)
+## EPIC 1 — Project Scaffold & Infrastructure [COMPLETE]
 
-- [ ] Entity + EF Core configuration created
-- [ ] Service interface + implementation
-- [ ] Razor Page(s) with forms/display
-- [ ] Role-based access enforced
-- [ ] Tenant scoping verified
-- [ ] Basic input validation
-- [ ] At least 1 MSTest unit test for service logic
-- [ ] Manual smoke test passed
+**Goal:** Bootable .NET 8 Razor Pages app with SQLite, EF Core, multi-tenant base, and shared layout.
 
----
-
-## Risk Register
-
-| Risk                              | Mitigation                                    |
-|-----------------------------------|-----------------------------------------------|
-| Claude API rate limits / downtime | Manual quote fallback always available         |
-| 24-hour scope creep               | Strict cut lines defined above                 |
-| SQLite concurrency limits         | Acceptable for demo; upgrade path to Postgres  |
-| Seed data looks unrealistic       | Research real sheetmetal pricing ranges         |
-| Auth complexity eats time         | Use Identity scaffolding, minimal custom UI    |
+| Feature | Description | Status |
+|---------|-------------|--------|
+| 1.1 | Solution & Project Structure | Complete |
+| 1.2 | EF Core + SQLite Setup | Complete |
+| 1.3 | Base Entity Model | Complete |
+| 1.4 | Shared Layout & Navigation | Complete |
 
 ---
 
-*Generated for MetalMetrics Hackathon Sprint — Ready to build! 🚀*
+## EPIC 2 — Authentication, Tenancy & Role Management [COMPLETE]
+
+**Goal:** Users can register a company (tenant), log in, and invite team members with roles.
+
+| Feature | Description | Status |
+|---------|-------------|--------|
+| 2.1 | ASP.NET Identity Setup | Complete |
+| 2.2 | Tenant Registration (Company Onboarding) | Complete |
+| 2.3 | Login / Logout | Complete |
+| 2.4 | User Invitation & Role Assignment | Complete |
+| 2.5 | Role-Based Authorization | Complete |
+
+---
+
+## EPIC 3 — Job & Quote Management [COMPLETE]
+
+**Goal:** Create and manage jobs with structured cost estimates. Auto-generated job numbers, slug-based URLs, full CRUD.
+
+| Feature | Description | Status |
+|---------|-------------|--------|
+| 3.1 | Tenant Entity | Complete |
+| 3.2 | Job Entity & CRUD | Complete |
+| 3.3 | Quote / Estimate Entity | Complete |
+| 3.4 | Cost Category Configuration (Tenant Settings) | Complete |
+
+---
+
+## EPIC 4 — AI-Powered Quoting [COMPLETE]
+
+**Goal:** Estimator fills structured form, Claude AI suggests pricing based on sheetmetal domain knowledge.
+
+| Feature | Description | Status |
+|---------|-------------|--------|
+| 4.1 | Claude API Client Service | Complete |
+| 4.2 | Structured Quote Request Form | Complete |
+| 4.3 | AI Prompt Engineering | Complete |
+| 4.4 | AI Quote Review & Acceptance | Complete |
+
+---
+
+## EPIC 5 — Actuals Entry [COMPLETE]
+
+**Goal:** After a job completes, record actual costs to compare against the estimate.
+
+| Feature | Description | Status |
+|---------|-------------|--------|
+| 5.1 | Job Actuals Entity | Complete |
+| 5.2 | Actuals Entry Form (side-by-side) | Complete |
+| 5.3 | Quick Entry Mode (Journeyman) | Complete |
+| 5.4 | Job Completion Workflow | Complete |
+
+---
+
+## EPIC 6 — Profitability Engine [COMPLETE]
+
+**Goal:** One-click view showing whether a job made or lost money, broken down by category.
+
+| Feature | Description | Status |
+|---------|-------------|--------|
+| 6.1 | Profitability Calculation Service | Complete |
+| 6.2 | Per-Job Profitability View | Complete |
+| 6.3 | Margin Threshold Alerts | Complete |
+
+---
+
+## EPIC 7 — Dashboard & Reporting [COMPLETE]
+
+**Goal:** At-a-glance overview of business health with charts, KPIs, pipeline visibility, and at-risk alerts.
+
+| Feature | Description | Status |
+|---------|-------------|--------|
+| 7.1 | Main Dashboard (KPIs + Pipeline) | Complete |
+| 7.2 | Profitability Summary Chart (Est vs Actual, color-coded) | Complete |
+| 7.3 | Margin Drift Trend (with target annotation line) | Complete |
+| 7.4 | Customer Profitability Breakdown (sortable, row highlighting) | Complete |
+| 7.5 | Category Variance / Estimating Accuracy (% + $ + arrows) | Complete |
+| 7.6 | At-Risk Job Alerts | Complete |
+| 7.7 | Work Pipeline Section | Complete |
+| 7.8 | Reports Page (date-range filtering) | Complete |
+
+---
+
+## EPIC 8 — Polish, Seed Data & Demo Prep [COMPLETE]
+
+**Goal:** Demo-ready with realistic data, professional UX, error handling, and print styles.
+
+| Feature | Description | Status |
+|---------|-------------|--------|
+| 8.1 | Seed Data Generator (2 tenants, 40 jobs, 17 users) | Complete |
+| 8.2 | UX Polish (responsive, color palette, print CSS) | Complete |
+| 8.3 | Error Handling & Edge Cases | Complete |
+| 8.4 | Demo Script Preparation | Complete |
+
+---
+
+## Service Registration (Program.cs)
+
+All services are registered as scoped in `Program.cs`:
+
+```csharp
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ITenantProvider, TenantProvider>();
+builder.Services.AddScoped<IJobService, JobService>();
+builder.Services.AddScoped<IQuoteService, QuoteService>();
+builder.Services.AddScoped<IActualsService, ActualsService>();
+builder.Services.AddScoped<IProfitabilityService, ProfitabilityService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<IReportsService, ReportsService>();
+builder.Services.AddScoped<IJobAssignmentService, JobAssignmentService>();
+builder.Services.AddScoped<ITimeEntryService, TimeEntryService>();
+builder.Services.AddScoped<IJobNoteService, JobNoteService>();
+builder.Services.AddHttpClient<IAIQuoteService, ClaudeAIQuoteService>();
+```
+
+## Migrations
+
+7 migrations applied automatically on startup:
+
+1. `InitialIdentityAndTenant` - Identity schema, Tenant, AppUser
+2. `AddTenantSettings` - TenantSettings with defaults
+3. `AddJobAndJobEstimate` - Job, JobEstimate entities
+4. `AddJobActuals` - JobActuals entity
+5. `AddJobAssignmentTimeEntryNotes` - JobAssignment, JobTimeEntry, JobNote
+6. `AddTimeEntryUserNavigation` - FK: TimeEntry.User
+7. `AddJobSlug` - Job.Slug (8-char unique per tenant)
+
+## Testing
+
+20 MSTest unit tests across 6 test classes using EF Core InMemory provider:
+
+| Test Class | Tests | Coverage |
+|-----------|-------|----------|
+| BaseEntityTests | 3 | Guid generation, default TenantId |
+| AppDbContextTests | 3 | Audit timestamps, auto TenantId |
+| JobServiceTests | 5 | JobNumber generation, status transitions, search/filter |
+| QuoteServiceTests | 2 | Cost/margin calculation, zero edge case |
+| ActualsServiceTests | 2 | Cost calculation, zero edge case |
+| ProfitabilityServiceTests | 5 | Profit/loss/break-even scenarios, warnings |
+
+## Key Design Decisions
+
+1. **SQLite** for zero-config development and demo portability
+2. **No global query filter** — tenant scoping done explicitly in service queries for clarity
+3. **Fixed random seed (42)** in DbSeeder for reproducible demo data
+4. **IHttpClientFactory** for Claude API with retry/exponential backoff
+5. **TempData** for passing AI quote data between pages (multi-step workflow)
+6. **Chart.js v4 via CDN** — no npm build required
+7. **Slug-based URLs** — 8-char random slug for shareable job links
+8. **Session-based filters** — PRG pattern for job list search/status persistence
+9. **Cascade deletes** — Tenant->Settings, Job->Estimate/Actuals/Assignments/TimeEntries/Notes
+10. **SQLite decimal limitation** — aggregate `Sum` on decimals done client-side via `ToListAsync()` then LINQ
+
+## Configuration
+
+**appsettings.json:**
+```json
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Data Source=metalmetrics.db"
+  }
+}
+```
+
+**User Secrets (not in repo):**
+- `ClaudeAI:ApiKey` — Anthropic API key
+- `ClaudeAI:Model` — Model name (default: `claude-sonnet-4-6`)
+- `ClaudeAI:MaxTokens` — Response limit (default: 1024)
+- `ClaudeAI:TimeoutSeconds` — Request timeout (default: 30)

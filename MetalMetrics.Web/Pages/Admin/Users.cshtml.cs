@@ -111,6 +111,8 @@ public class UsersModel : PageModel
         await _userManager.AddToRoleAsync(user, Invite.Role.ToString());
         await _userManager.AddClaimAsync(user,
             new System.Security.Claims.Claim("TenantId", tenantId.ToString()));
+        await _userManager.AddClaimAsync(user,
+            new System.Security.Claims.Claim("FullName", user.FullName));
 
         GeneratedPassword = tempPassword;
         InvitedEmail = Invite.Email;

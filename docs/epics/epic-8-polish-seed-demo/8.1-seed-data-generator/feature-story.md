@@ -1,89 +1,80 @@
 # Feature 8.1 — Seed Data Generator
 
 **Epic:** Epic 8 — Polish, Seed Data & Demo Prep
-**Status:** Pending
-**Priority:** High
-**Estimated Effort:** Medium
+**Status:** Complete
 
 ---
 
 ## User Story
 
 **As a** demo presenter,
-**I want** the application pre-loaded with realistic sheetmetal fabrication jobs, estimates, and actuals,
-**so that** the dashboard and reports look compelling and the demo tells a convincing story.
+**I want** the app pre-loaded with realistic sheetmetal jobs, estimates, and actuals,
+**so that** the dashboard and reports tell a compelling story.
 
 ---
 
-## Acceptance Criteria
+## Implementation
 
-- [ ] Seed data generator creates 15–25 realistic sheetmetal jobs
-- [ ] Jobs include a mix of profitable and unprofitable outcomes
-- [ ] Varied customer names (at least 5–6 different customers)
-- [ ] Varied materials (mild steel, stainless, aluminum, etc.)
-- [ ] Varied complexity levels and operations
-- [ ] Each job has a pre-populated `JobEstimate`
-- [ ] Each completed job has pre-populated `JobActuals`
-- [ ] At least 2 demo tenants (companies) with separate data
-- [ ] Job statuses are mixed: some Quoted, some InProgress, most Completed, a few Invoiced
-- [ ] Seed data runs on application startup (or via a command/flag)
-- [ ] Seed data is idempotent (doesn't duplicate on re-run)
+### DbSeeder (`Infrastructure/Data/DbSeeder.cs`, ~460 lines)
 
----
+Static class called from `Program.cs` in Development environment only:
+```csharp
+if (app.Environment.IsDevelopment())
+{
+    await DbSeeder.SeedAsync(scope.ServiceProvider);
+}
+```
 
-## Seed Data Profile
+### Idempotency
 
-| Attribute        | Range / Distribution                                      |
-|------------------|-----------------------------------------------------------|
-| Customers        | 5–6 companies (ABC Fabrication, Metro Industries, etc.)   |
-| Materials        | Mild Steel (40%), Stainless (25%), Aluminum (20%), Other  |
-| Labor Hours      | 2–40 hours per job                                        |
-| Material Cost    | $50–$5,000 per job                                        |
-| Machine Hours    | 0.5–15 hours per job                                      |
-| Quote Prices     | $500–$15,000                                              |
-| Margin Outcomes  | 60% profitable, 25% marginal, 15% at a loss              |
-| Completion Dates | Spread over the last 3–6 months                           |
+Checks `context.Tenants.Any()` before seeding. Safe to run multiple times.
 
----
+### Fixed Random Seed
 
-## Technical Notes
+Uses `new Random(42)` for reproducible demo data across rebuilds.
 
-- Location: `MetalMetrics.Infrastructure/Data/DbSeeder.cs` or `SeedDataGenerator.cs`
-- Call from `Program.cs`:
-  ```csharp
-  using (var scope = app.Services.CreateScope())
-  {
-      var seeder = scope.ServiceProvider.GetRequiredService<IDbSeeder>();
-      await seeder.SeedAsync();
-  }
-  ```
-- Idempotency: check if data already exists before seeding (`if (!context.Jobs.Any())`)
-- Create 2 tenants:
-  - "Precision Metal Works" — well-run shop (mostly profitable)
-  - "Budget Fabricators" — struggling shop (more losses, for contrast)
-- Include at least one dramatic "money lost" job for demo impact
-- Use realistic sheetmetal pricing ranges (research if needed)
-- Consider creating demo user accounts with known passwords for easy login
+### Two Demo Tenants
 
----
+**Precision Metal Works** (profitable shop):
+- 10 employees, 24 jobs
+- Rates: $95/hr labor, $175/hr machine, 30% overhead, 25% target margin
+- Customers: Cascade Structural, Pacific Rim Manufacturing, Olympic Steel Systems, Summit Engineering, Columbia Basin Metals, Rainier Industrial
+- Variance profile: tight control, +/-5-10% estimate variance
 
-## Dependencies
+**Budget Fabricators** (struggling shop):
+- 7 employees, 16 jobs
+- Rates: $68/hr labor, $130/hr machine, 20% overhead, 15% target margin
+- Customers: ABC Fabrication, Metro Industries, Smith & Sons, Valley Contractors, Delta Manufacturing
+- Variance profile: 20-30%+ variance, every 3rd job has major overrun
 
-- Feature 3.1 (Tenant Entity)
-- Feature 3.2 (Job Entity)
-- Feature 3.3 (Quote Entity)
-- Feature 3.4 (Tenant Settings)
-- Feature 5.1 (Job Actuals Entity)
-- Feature 2.1 (Identity — for demo user accounts)
+### Job Profiles (24 types)
+
+Realistic sheetmetal work: laser cut brackets, welded enclosures, CNC punched plates, formed channels, stainless handrails, aluminum panels, etc. Each with appropriate labor hours (2-40), material costs ($50-$5,000), machine hours (0.5-15), and quote prices ($500-$15,000).
+
+### Seed Data Includes
+
+1. **Roles** — All 6 AppRole values created as IdentityRoles
+2. **Tenants** + TenantSettings with appropriate rates
+3. **Users** — All demo users with hashed passwords (`Demo123!`)
+4. **Jobs** — Mix of Quoted (2), InProgress (2), Completed (most), Invoiced
+5. **JobEstimates** — Cost breakdowns for each job
+6. **JobActuals** — For completed/invoiced jobs with variance modeling
+7. **JobAssignments** — PMs, Estimators, Foremen, Journeymen assigned to jobs
+8. **JobTimeEntries** — 2-4 entries per worker per job with realistic hours
+9. **JobNotes** — Sample progress notes with placeholder SVG image references
+
+### Completion Date Spread
+
+Jobs completed over the last 3-6 months for realistic chart data.
 
 ---
 
 ## Definition of Done
 
-- [ ] Seed data populates 15–25 jobs across 2 tenants
-- [ ] Mix of profitable and unprofitable jobs
-- [ ] All estimates and actuals have realistic values
-- [ ] Dashboard and charts look compelling with seed data
-- [ ] Seed is idempotent (safe to run multiple times)
-- [ ] Demo user accounts created with known credentials
-- [ ] Manual verification that reports look realistic
+- [x] 2 tenants with 40 total jobs and 17 users
+- [x] Mix of profitable and unprofitable outcomes
+- [x] All estimates and actuals have realistic values
+- [x] Seed is idempotent
+- [x] Fixed random seed for reproducibility
+- [x] Demo credentials documented (all `Demo123!`)
+- [x] Dashboard and charts look compelling with seed data
